@@ -1,0 +1,171 @@
+# Semantic Layer definition for the Page View Revenue table (event level)
+
+models:
+  - name: page_view_revenue # A simplified name for the model
+    description: "Event level data for page views and associated revenue"
+    # Reference the physical table name
+    # relation: ANALYTICS.REVENUE.PAGE_VIEW_REVENUE
+
+    dimensions:
+      - name: data_date
+        description: "The date of the event"
+        type: date
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.DATA_DATE}
+
+      - name: data_timezone
+        description: "The timezone of the event data"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.DATA_TZ}
+
+      - name: data_timestamp
+        description: "The timestamp of the event"
+        type: timestamp
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.DATA_TS}
+
+      - name: segment
+        description: "User or traffic segment"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SEGMENT}
+
+      - name: country_code
+        description: "Country code of the user"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.COUNTRY_CODE}
+
+      - name: device_type
+        description: "Type of device used (Mobile, Desktop, Tablet)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW.DEVICE_TYPE}
+
+      - name: partner_id
+        description: "Identifier for the partner"
+        type: number
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.PARTNER_ID}
+
+      - name: domain
+        description: "The domain where the event occurred"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.DOMAIN}
+
+      - name: utm_source
+        description: "UTM Source from the URL"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.UTM_SOURCE}
+
+      - name: account_id
+        description: "Associated Advertising Account ID (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.ACCOUNT_ID}
+
+      - name: campaign_id
+        description: "Associated Advertising Campaign ID (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.CAMPAIGN_ID}
+
+      - name: adgroup_id
+        description: "Associated Advertising Ad Group ID (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.ADGROUP_ID}
+
+      - name: keyword_id
+        description: "Associated Advertising Keyword ID (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.KEYWORD_ID}
+
+      - name: serp_query
+        description: "The search query on the SERP (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SERP_QUERY}
+
+      - name: placement
+        description: "Placement details (e.g., ad slot)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.PLACEMENT}
+
+      - name: session_id
+        description: "Unique identifier for the user session"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SESSION_ID}
+
+      - name: request_id
+        description: "Unique identifier for the request"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.REQUEST_ID}
+
+      - name: url
+        description: "The URL of the page view"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.URL}
+
+      - name: buyside_click_id
+        description: "Identifier for the buyside click (if applicable)"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.BUYSIDE_CLICK_ID}
+
+      - name: source_name
+        description: "Name of the traffic source"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SOURCE_NAME}
+
+      - name: last_modified_at
+        description: "Timestamp of last modification"
+        type: timestamp
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.LAST_MODIFIED_AT}
+
+      - name: last_modified_by_session_id
+        description: "Session ID of the last modifier"
+        type: string
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.LAST_MODIFIED_BY_SESSION_ID}
+
+    measures:
+      - name: widget_loads
+        description: "Total number of widget loads"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.WIDGET_LOADS}
+
+      - name: sellside_searches
+        description: "Total number of sell-side searches"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SELLSIDE_SEARCHES}
+
+      - name: net_revenue
+        description: "Total Net Revenue"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.NET_REVENUE}
+
+      - name: net_clawback
+        description: "Total Net Clawback"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.NET_CLAWBACK}
+
+      - name: gross_revenue
+        description: "Total Gross Revenue"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.GROSS_REVENUE}
+
+      - name: gross_clawback
+        description: "Total Gross Clawback"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.GROSS_CLAWBACK}
+
+      - name: sellside_clicks_external
+        description: "Total external sell-side clicks"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SELLSIDE_CLICKS_EXTERNAL}
+
+      - name: sellside_clicks_internal
+        description: "Total internal sell-side clicks"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SELLSIDE_CLICKS_INTERNAL}
+
+      - name: spam_clicks
+        description: "Total spam clicks"
+        type: sum
+        sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SPAM_CLICKS}
+
+      # You might also add measures for calculated metrics like Net Profit, Gross Profit, RPC, etc.
+      # - name: net_profit
+      #   description: "Total Net Profit (Net Revenue - Buyside Cost)"
+      #   type: derived
+      #   expression: "{{ sum('net_revenue') }} - {{ sum('buyside_cost') }}" # Requires joining with buyside data or having buyside cost in this table
+

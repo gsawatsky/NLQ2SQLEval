@@ -1,0 +1,99 @@
+# Semantic Layer definition for the Keyword Performance Daily view
+
+models:
+  - name: keyword_performance_daily # A simplified name for the model
+    description: "Daily performance data at the keyword level"
+    # Reference the physical view name
+    # relation: ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY
+
+    dimensions:
+      - name: data_date
+        description: "The date of the data"
+        type: date
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.DATA_DATE}
+
+      - name: data_timezone
+        description: "The timezone of the data"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.DATA_TZ}
+
+      - name: account_id
+        description: "Advertising Account ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.ACCOUNT_ID}
+
+      - name: campaign_id
+        description: "Advertising Campaign ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CAMPAIGN_ID}
+
+      - name: ad_group_id
+        description: "Advertising Ad Group ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.AD_GROUP_ID}
+
+      - name: keyword_id
+        description: "Advertising Keyword ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.KEYWORD_ID}
+
+      - name: keyword_text
+        description: "The text of the keyword"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.KEYWORD_TEXT}
+
+      - name: keyword_match_type
+        description: "The match type of the keyword"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.KEYWORD_MATCH_TYPE}
+
+      - name: last_modified_at
+        description: "Timestamp of last modification"
+        type: timestamp
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.LAST_MODIFIED_AT}
+
+    measures:
+      - name: impressions
+        description: "Total Impressions at the keyword level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.IMPRESSIONS}
+
+      - name: clicks
+        description: "Total Clicks at the keyword level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CLICKS}
+
+      - name: conversions
+        description: "Total Conversions at the keyword level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CONVERSIONS}
+
+      - name: spend_usd
+        description: "Total Spend in USD at the keyword level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.SPEND_USD}
+
+      - name: average_ctr
+        description: "Average Click-Through Rate at the keyword level"
+        type: average # Use average type for rates
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CTR}
+        # You might also define CTR as a derived measure if needed:
+        # type: derived
+        # expression: "{{ sum('clicks') }} / {{ sum('impressions') }}"
+
+      - name: average_cpc_usd
+        description: "Average Cost Per Click in USD at the keyword level"
+        type: average # Use average type for costs
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CPC_USD}
+        # Or as a derived measure:
+        # type: derived
+        # expression: "{{ sum('spend_usd') }} / {{ sum('clicks') }}"
+
+      - name: average_cpa_usd
+        description: "Average Cost Per Acquisition in USD at the keyword level"
+        type: average # Use average type for costs
+        sql: ${ANALYTICS.BUYSIDE.KEYWORD_PERFORMANCE_DAILY.CPA_USD}
+        # Or as a derived measure:
+        # type: derived
+        # expression: "{{ sum('spend_usd') }} / {{ sum('conversions') }}"
+

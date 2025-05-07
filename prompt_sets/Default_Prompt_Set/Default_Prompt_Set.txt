@@ -1,0 +1,19 @@
+As a Snowflake Sql expert, please generate a Sql command for the following natural language query:
+
+{{NLQ}}
+
+Here is the schema:
+
+{{include:schema.txt}}
+
+Here is the semantic layer mappings:
+
+{{include:semantic_mappings.yaml}}
+
+Additional Instructions:
+
+- Your response should be the raw SQL query only, without any markdown formatting or additional text.
+- If the query is a SELECT statement, please include the column names in the response.
+- The Sql query should be valid and should not contain any errors for Snowflake SQL.
+
+

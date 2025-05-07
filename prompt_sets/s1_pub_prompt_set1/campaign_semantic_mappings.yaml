@@ -1,0 +1,109 @@
+# Semantic Layer definition for the Campaign Performance Daily view
+
+models:
+  - name: campaign_performance_daily # A simplified name for the model
+    description: "Daily performance data at the campaign level"
+    # Reference the physical view name
+    # relation: ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY
+
+    dimensions:
+      - name: data_date
+        description: "The date of the data"
+        type: date
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.DATA_DATE}
+
+      - name: data_timezone
+        description: "The timezone of the data"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.DATA_TZ}
+
+      - name: account_id
+        description: "Advertising Account ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.ACCOUNT_ID}
+
+      - name: campaign_id
+        description: "Advertising Campaign ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CAMPAIGN_ID}
+
+      - name: campaign_name
+        description: "Name of the Advertising Campaign"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CAMPAIGN_NAME}
+
+      - name: bidding_strategy
+        description: "The bidding strategy used for the campaign"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.BIDDING_STRATEGY}
+
+      - name: bidding_strategy_type
+        description: "The type of bidding strategy used"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.BIDDING_STRATEGY_TYPE}
+
+      - name: campaign_budget_id
+        description: "Advertising Campaign Budget ID"
+        type: string
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CAMPAIGN_BUDGET_ID}
+
+      - name: target_roas
+        description: "The target Return on Ad Spend setting for the campaign"
+        type: number # Assuming this represents a numerical target
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.TARGET_ROAS}
+
+      - name: daily_budget_usd
+        description: "Daily budget in USD for the campaign"
+        type: number
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.DAILY_BUDGET_USD}
+
+      - name: last_modified_at
+        description: "Timestamp of last modification"
+        type: timestamp
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.LAST_MODIFIED_AT}
+
+    measures:
+      - name: impressions
+        description: "Total Impressions at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.IMPRESSIONS}
+
+      - name: clicks
+        description: "Total Clicks at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CLICKS}
+
+      - name: conversions
+        description: "Total Conversions at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CONVERSIONS}
+
+      - name: spend_usd
+        description: "Total Spend in USD at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.SPEND_USD}
+
+      - name: average_ctr
+        description: "Average Click-Through Rate at the campaign level"
+        type: average # Use average type for rates
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CTR}
+        # You might also define CTR as a derived measure if needed:
+        # type: derived
+        # expression: "{{ sum('clicks') }} / {{ sum('impressions') }}"
+
+      - name: average_cpc_usd
+        description: "Average Cost Per Click in USD at the campaign level"
+        type: average # Use average type for costs
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CPC_USD}
+        # Or as a derived measure:
+        # type: derived
+        # expression: "{{ sum('spend_usd') }} / {{ sum('clicks') }}"
+
+      - name: average_cpa_usd
+        description: "Average Cost Per Acquisition in USD at the campaign level"
+        type: average # Use average type for costs
+        sql: ${ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY.CPA_USD}
+        # Or as a derived measure:
+        # type: derived
+        # expression: "{{ sum('spend_usd') }} / {{ sum('conversions') }}"
+

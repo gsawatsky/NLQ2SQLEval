@@ -1,0 +1,29 @@
+# Semantic Layer definition for the users table
+
+models:
+  - name: users # The physical table name in the database
+    description: "Information about users" # Optional description
+
+    dimensions:
+      - name: user_identifier # Business-friendly name for the dimension
+        description: "Unique identifier for the user" # Optional description
+        type: number # Data type hint (optional but helpful)
+        sql: ${users.id} # Mapping to the physical column
+
+      - name: user_name # Business-friendly name
+        description: "The name of the user"
+        type: string # Data type hint
+        sql: ${users.name} # Mapping to the physical column
+
+      - name: user_email_address # Business-friendly name
+        description: "The email address of the user"
+        type: string # Data type hint
+        sql: ${users.email} # Mapping to the physical column
+
+    # Measures can be added here if needed (e.g., count of users)
+    # measures:
+    #   - name: user_count
+    #     description: "Total number of users"
+    #     type: count
+    #     sql: ${users.id} # Count distinct user ids
+

@@ -1,0 +1,258 @@
+# Semantic Layer definition for the Google Ads Full Funnel Daily table
+
+models:
+  - name: google_ads_full_funnel_daily # A simplified name for the model
+    description: "Daily performance data for Google Ads full funnel"
+    # Reference the physical table name using the 'relation' key if needed by your semantic layer tool
+    # relation: ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY
+
+    dimensions:
+      - name: data_date # Business-friendly name
+        description: "The date of the data"
+        type: date # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.DATA_DATE} # Mapping to physical column
+
+      - name: data_timezone # Business-friendly name
+        description: "The timezone of the data"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.DATA_TZ} # Mapping to physical column
+
+      - name: account_id # Business-friendly name
+        description: "Google Ads Account ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.ACCOUNT_ID} # Mapping to physical column
+
+      - name: campaign_id # Business-friendly name
+        description: "Google Ads Campaign ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_ID} # Mapping to physical column
+
+      - name: ad_group_id # Business-friendly name
+        description: "Google Ads Ad Group ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_GROUP_ID} # Mapping to physical column
+
+      - name: ad_id # Business-friendly name
+        description: "Google Ads Ad ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_ID} # Mapping to physical column
+
+      - name: keyword_id # Business-friendly name
+        description: "Google Ads Keyword ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_ID} # Mapping to physical column
+
+      - name: campaign_name # Business-friendly name
+        description: "Name of the Google Ads Campaign"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_NAME} # Mapping to physical column
+
+      - name: bidding_strategy # Business-friendly name
+        description: "The bidding strategy used for the campaign"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.BIDDING_STRATEGY} # Mapping to physical column
+
+      - name: bidding_strategy_type # Business-friendly name
+        description: "The type of bidding strategy used"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.BIDDING_STRATEGY_TYPE} # Mapping to physical column
+
+      - name: target_roas # Business-friendly name
+        description: "The target Return on Ad Spend setting"
+        type: string # Data type hint (VARCHAR in schema, might represent a number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.TARGET_ROAS} # Mapping to physical column
+
+      - name: daily_budget_usd # Business-friendly name
+        description: "Daily budget in USD"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.DAILY_BUDGET_USD} # Mapping to physical column
+
+      - name: campaign_budget_id # Business-friendly name
+        description: "Google Ads Campaign Budget ID"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_BUDGET_ID} # Mapping to physical column
+
+      - name: ad_name # Business-friendly name
+        description: "Name of the Google Ads Ad"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_NAME} # Mapping to physical column
+
+      - name: ad_type # Business-friendly name
+        description: "The type of Google Ads Ad"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_TYPE} # Mapping to physical column
+
+      - name: keyword_text # Business-friendly name
+        description: "The text of the keyword"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_TEXT} # Mapping to physical column
+
+      - name: keyword_match_type # Business-friendly name
+        description: "The match type of the keyword"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_MATCH_TYPE} # Mapping to physical column
+
+      - name: campaign_impressions # Business-friendly name
+        description: "Impressions at the campaign level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_IMPRESSIONS} # Mapping to physical column
+
+      - name: campaign_clicks # Business-friendly name
+        description: "Clicks at the campaign level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CLICKS} # Mapping to physical column
+
+      - name: campaign_conversions # Business-friendly name
+        description: "Conversions at the campaign level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CONVERSIONS} # Mapping to physical column
+
+      - name: campaign_spend_usd # Business-friendly name
+        description: "Spend in USD at the campaign level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_SPEND_USD} # Mapping to physical column
+
+      - name: campaign_ctr # Business-friendly name
+        description: "Click-through rate at the campaign level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CTR} # Mapping to physical column
+
+      - name: campaign_cpc_usd # Business-friendly name
+        description: "Cost per click in USD at the campaign level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CPC_USD} # Mapping to physical column
+
+      - name: campaign_cpa_usd # Business-friendly name
+        description: "Cost per acquisition in USD at the campaign level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CPA_USD} # Mapping to physical column
+
+      - name: ad_impressions # Business-friendly name
+        description: "Impressions at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_IMPRESSIONS} # Mapping to physical column
+
+      - name: ad_clicks # Business-friendly name
+        description: "Clicks at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_CLICKS} # Mapping to physical column
+
+      - name: ad_conversions # Business-friendly name
+        description: "Conversions at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_CONVERSIONS} # Mapping to physical column
+
+      - name: ad_spend_usd # Business-friendly name
+        description: "Spend in USD at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_SPEND_USD} # Mapping to physical column
+
+      - name: ad_ctr # Business-friendly name
+        description: "Click-through rate at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_CTR} # Mapping to physical column
+
+      - name: ad_cpc_usd # Business-friendly name
+        description: "Cost per click in USD at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_CPC_USD} # Mapping to physical column
+
+      - name: ad_cpa_usd # Business-friendly name
+        description: "Cost per acquisition in USD at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_CPA_USD} # Mapping to physical column
+
+      - name: keyword_impressions # Business-friendly name
+        description: "Impressions at the keyword level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_IMPRESSIONS} # Mapping to physical column
+
+      - name: keyword_clicks # Business-friendly name
+        description: "Clicks at the keyword level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_CLICKS} # Mapping to physical column
+
+      - name: keyword_conversions # Business-friendly name
+        description: "Conversions at the keyword level"
+        type: number # Data type hint (VARCHAR in schema, seems like it should be number)
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_CONVERSIONS} # Mapping to physical column
+
+      - name: keyword_spend_usd # Business-friendly name
+        description: "Spend in USD at the keyword level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_SPEND_USD} # Mapping to physical column
+
+      - name: keyword_ctr # Business-friendly name
+        description: "Click-through rate at the keyword level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_CTR} # Mapping to physical column
+
+      - name: keyword_cpc_usd # Business-friendly name
+        description: "Cost per click in USD at the keyword level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_CPC_USD} # Mapping to physical column
+
+      - name: keyword_cpa_usd # Business-friendly name
+        description: "Cost per acquisition in USD at the keyword level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_CPA_USD} # Mapping to physical column
+
+      - name: keyword_to_campaign_click_rate # Business-friendly name
+        description: "Click rate from keyword to campaign"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_TO_CAMPAIGN_CLICK_RATE} # Mapping to physical column
+
+      - name: keyword_to_ad_conversion_rate # Business-friendly name
+        description: "Conversion rate from keyword to ad"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_TO_AD_CONVERSION_RATE} # Mapping to physical column
+
+      - name: budget_utilization_rate # Business-friendly name
+        description: "Rate of budget utilization"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.BUDGET_UTILIZATION_RATE} # Mapping to physical column
+
+      - name: campaign_roas # Business-friendly name
+        description: "Return on Ad Spend at the campaign level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_ROAS} # Mapping to physical column
+
+      - name: ad_roas # Business-friendly name
+        description: "Return on Ad Spend at the ad level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_ROAS} # Mapping to physical column
+
+      - name: keyword_roas # Business-friendly name
+        description: "Return on Ad Spend at the keyword level"
+        type: number # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.KEYWORD_ROAS} # Mapping to physical column
+
+      - name: last_modified_at # Business-friendly name
+        description: "Timestamp of last modification"
+        type: timestamp # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.LAST_MODIFIED_AT} # Mapping to physical column
+
+      - name: last_modified_by_session_id # Business-friendly name
+        description: "Session ID of the last modifier"
+        type: string # Data type hint
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.LAST_MODIFIED_BY_SESSION_ID} # Mapping to physical column
+
+    # Measures can be added here based on aggregatable columns like spend, clicks, impressions, conversions
+    measures:
+      - name: total_campaign_spend_usd
+        description: "Total spend in USD at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_SPEND_USD}
+
+      - name: total_campaign_clicks
+        description: "Total clicks at the campaign level"
+        type: sum
+        sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.CAMPAIGN_CLICKS} # Note: Original schema is VARCHAR, may need casting
+
+      # Add more measures as needed for other aggregatable metrics
+      # - name: total_ad_impressions
+      #   description: "Total impressions at the ad level"
+      #   type: sum
+      #   sql: ${ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY.AD_IMPRESSIONS}
+      # ... etc.
+

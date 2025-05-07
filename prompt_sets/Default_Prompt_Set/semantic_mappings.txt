@@ -1,0 +1,4 @@
+-- Example semantic layer mappings
+users.id -> user identifier
+users.name -> user name
+users.email -> user email address

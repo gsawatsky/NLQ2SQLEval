@@ -1,0 +1,6 @@
+1.campaign_performance_daily
+2.ad_group_performance_daily
+3.keyword_performance_daily
+4.google_aff_performance_daily
+5.page_view_revenue
+

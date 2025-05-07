@@ -1,0 +1,6 @@
+-- Example schema for Snowflake
+CREATE TABLE users (
+    id INT,
+    name STRING,
+    email STRING
+);
