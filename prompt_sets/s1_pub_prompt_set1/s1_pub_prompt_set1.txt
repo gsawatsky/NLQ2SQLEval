@@ -6,7 +6,7 @@ STRICT Instructions for SQL Generation:
 
 - Your response should be the raw SQL query only, without any markdown formatting or additional text.
 - If the query is a SELECT statement, please include the column names in the response.
-- The Sql query should be valid and should not contain any errors for Snowflake SQL.
+- The Sql query should be properly formulated, use valid syntax and should not contain any errors for Snowflake SQL.
 - If you cannot formulate a valid SQL query with > 80% confidence, please return the message "Cannot formulate a valid SQL query for the given natural language query." and explain why and suggest an alternative natural language query that is semantically similar but possible while keeping it concise.
 
 
