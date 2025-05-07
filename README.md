@@ -116,6 +116,75 @@ NLQ2SQLEval/
 6. Get query explanations and comparisons
 7. Provide feedback on generated queries
 
+---
+
+## Adding a New Prompt Set
+
+You can add custom prompt sets to tailor the NL-to-SQL generation process for different use cases or domains.
+
+### 1. Register the Prompt Set via the API
+
+Use the `/prompt_sets` endpoint to register a new prompt set with a name and description:
+
+**Example (using curl):**
+```bash
+curl -X POST "http://localhost:8000/prompt_sets" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "my_custom_prompt_set",
+        "description": "Prompt set for custom business logic queries."
+      }'
+```
+- `name`: Must match the folder name you will create in the next step.
+- `description`: Human-readable description for UI selection.
+
+### 2. Add a Prompt Set Folder and Files
+
+Create a new folder under `prompt_sets/` using the same name as above (e.g., `prompt_sets/my_custom_prompt_set/`).
+
+**Naming conventions:**
+- Folder name: `snake_case`, unique, matches the `name` in the API.
+- Main template file: `<prompt_set_name>.txt` (e.g., `my_custom_prompt_set.txt`).
+- Supporting files: e.g., `schema.txt`, `glossary_terms.txt`, and any semantic mapping YAMLs.
+
+**Example structure:**
+```
+prompt_sets/
+  my_custom_prompt_set/
+    my_custom_prompt_set.txt
+    schema.txt
+    glossary_terms.txt
+    my_semantic_mappings.yaml
+```
+
+### 3. Use Dynamic Substitution in Templates
+
+Prompt set templates support dynamic variables and file includes:
+- `{{NLQ}}`: Will be replaced with the user's natural language query.
+- `{{include:schema.txt}}`: Will insert the contents of `schema.txt` from the same folder.
+- `{{include:glossary_terms.txt}}`: Will insert the glossary terms.
+- You can include multiple files and use any variable supported by the backend.
+
+**Example prompt template:**
+```
+As a Snowflake SQL expert, please generate a SQL command for the following natural language query:
+
+{{NLQ}}
+
+Here are the schemas:
+{{include:schema.txt}}
+
+Glossary:
+{{include:glossary_terms.txt}}
+```
+
+**Tips:**
+- Keep your prompt modular by using includes for schemas, mappings, and glossary.
+- Use clear instructions and delimiters in your main prompt file for best LLM results.
+- All files referenced with `{{include:...}}` must be in the same prompt set folder.
+
+Once the folder and files are in place and registered, your new prompt set will be available for selection in the UI.
+
 ## Supported Metrics and Dimensions
 - **Metrics:**
   - Buyside Metrics: Impressions, Clicks, Cost, CPC, CTR
@@ -136,6 +205,53 @@ NLQ2SQLEval/
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
+
+---
+
+## Backend API Endpoints
+
+Below is a list of the main backend API endpoints provided by the NLQ2SQLEval system:
+
+### NLQ (Natural Language Query)
+- `GET /nlqs` — List all NLQs
+- `POST /nlqs` — Create a new NLQ (with baseline SQL)
+
+### Baseline SQL
+- `GET /baseline_sqls` — List all baseline SQL queries
+- `POST /baseline_sqls` — Create a new baseline SQL
+
+### Prompt Sets
+- `GET /prompt_sets` — List all prompt sets
+- `POST /prompt_sets` — Create/register a new prompt set
+
+### Prompt Components
+- `GET /prompt_components` — No longer used
+- `POST /prompt_components` — No longer used
+
+### LLM Configurations
+- `GET /llm_configs` — List all LLM (Large Language Model) configurations.  Note: This will return the api_key in the current configuration.
+- `POST /llm_configs` — Create a new LLM configuration
+
+### Validation Runs
+- `GET /validation_runs` — Non-functional at this time.
+- `POST /validation_runs` — Create a new validation run.  Untested.
+
+### Generated Results
+- `GET /generated_results` — List all generated results
+- `POST /generated_results` — Create a new generated result
+- `PUT /generated_results/{result_id}` — Update a generated result (e.g., add human evaluation or comments)
+
+### Evaluation
+- `POST /evaluate/run` — Start a new evaluation run (main orchestration endpoint)
+- `POST /explain_query` — Explain and compare SQL queries using the LLM
+
+### Run Details
+- `GET /runs/{run_id}` — Get details and results for a specific evaluation run
+
+### Prompt Templating
+- `POST /prompt_template` — Render a prompt template with dynamic substitution/macros
+
+---
 
 ## License
 This project is for internal use at System1 LLC. While the code is publicly available on GitHub, it is provided "as is" without warranty of any kind, express or implied. System1 LLC does not provide support for this project to external users.
