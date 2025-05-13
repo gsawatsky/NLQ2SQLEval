@@ -5,9 +5,13 @@ As a Snowflake Sql expert, please generate a Sql command for the following natur
 STRICT Instructions for SQL Generation:
 
 - Your response should be the raw SQL query only, without any markdown formatting or additional text.
+    - For example, do not wrap the Sql results in ```sql or ```
 - If the query is a SELECT statement, please include the column names in the response.
-- The Sql query should be properly formulated, use valid syntax and should not contain any errors for Snowflake SQL.
-- If you cannot formulate a valid SQL query with > 80% confidence, please return the message "Cannot formulate a valid SQL query for the given natural language query." and explain why and suggest an alternative natural language query that is semantically similar but possible while keeping it concise.
+- The Sql query should be properly formulated, use valid syntax (no missing SELECT, FROM, etc...) and should not contain any errors, invalid characters, invalid identifiers, etc... for Snowflake SQL.
+- Put all assumptions, ambiguities, and heuristics used in a comment at the top of the Sql query.
+- If you cannot formulate a valid or semantically sound SQL query with > 90% confidence, please return the message "Cannot formulate a valid SQL query for the given natural language query." and explain why and suggest an alternative natural language query that is semantically similar but possible while keeping it concise.
+- If a there is no time context provided, then do not generate the Sql and return a comment that states "No time context provided."
+- string comparisons should be case-insensitive.
 
 
 Here are the schemas:
@@ -29,6 +33,7 @@ And Glossary of Terms:
 Optimizations:
 
 - Write the most efficient Snowflake SQL query possible.
+- If the query refers to past days, then it must be past whole completed days.  The DATA_TZ column indicates the timezone of the data but it must be at least 10 hours after the current time to be used.
 - Choose from the most efficient tables that will meet the requirements of the natural language query:
 - The following tables are ordered from most aggregated (i.e. most efficient if no dimensions are selected or dimensions are sufficient) to least aggregated (i.e. least efficient if no dimensions are selected or dimensions are insufficient):
 {{include:table_agg_level_order.txt}}

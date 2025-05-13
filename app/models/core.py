@@ -1,20 +1,12 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Boolean
 from sqlalchemy.orm import relationship
 from app.database.database import Base
 import datetime
-
-class BaselineSQL(Base):
-    __tablename__ = "baseline_sqls"
-    id = Column(Integer, primary_key=True, index=True)
-    sql_text = Column(Text, nullable=False)
-    nlqs = relationship("NLQ", back_populates="baseline_sql")
 
 class NLQ(Base):
     __tablename__ = "nlqs"
     id = Column(Integer, primary_key=True, index=True)
     nlq_text = Column(Text, nullable=False)
-    baseline_sql_id = Column(Integer, ForeignKey("baseline_sqls.id"))
-    baseline_sql = relationship("BaselineSQL", back_populates="nlqs")
     generated_results = relationship("GeneratedResult", back_populates="nlq")
 
 class LLMConfig(Base):
@@ -78,6 +70,7 @@ class GeneratedResult(Base):
     human_evaluation_tag = Column(String, nullable=True)
     comments = Column(Text, nullable=True)
     llm_response_time_ms = Column(Integer, nullable=True)  # Time in milliseconds for LLM response
+    is_baseline = Column(Boolean, nullable=False, default=False)
     validation_run = relationship("ValidationRun", back_populates="generated_results")
     nlq = relationship("NLQ", back_populates="generated_results")
     llm_config = relationship("LLMConfig", back_populates="generated_results")

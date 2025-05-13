@@ -26,13 +26,25 @@ export async function fetchRunDetails(runId: number) {
   return res.json();
 }
 
-export async function createNlq(nlqText: string, baselineSqlText: string) {
+export async function createNlq(nlqText: string) {
   const res = await fetch("http://localhost:8000/nlqs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nlq_text: nlqText, baseline_sql_text: baselineSqlText }),
+    body: JSON.stringify({ nlq_text: nlqText }),
   });
   if (!res.ok) throw new Error("Failed to create NLQ");
+  return res.json();
+}
+
+export async function searchNlqByText(nlqText: string) {
+  const res = await fetch(`http://localhost:8000/nlqs/search?nlq_text=${encodeURIComponent(nlqText)}`);
+  if (!res.ok) throw new Error("NLQ not found");
+  return res.json();
+}
+
+export async function fetchBaselineSqlForNlq(nlqId: number) {
+  const res = await fetch(`http://localhost:8000/nlqs/${nlqId}/baseline_sql`);
+  if (!res.ok) throw new Error("No baseline SQL found for this NLQ");
   return res.json();
 }
 

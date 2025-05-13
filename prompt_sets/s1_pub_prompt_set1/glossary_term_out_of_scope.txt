@@ -1,0 +1,48 @@
+---
+Term: SERP Conversion Rate
+Category: Metric - Sellside
+Definition: Conversions originating from Clicks on the SERP / Number of Clicks on the SERP
+---
+Term: Content Conversion Rate
+Category: Metric - (Full funnel??)
+Definition: Count of SERPS/Count of Content
+
+---
+Term: Profitability Rate
+Category: Metric - Full Funnel
+Definition: percentage of clicks leading to profitable sessions, or percentage of keywords meeting a specific RPC/CPA target
+
+---
+Term: Matched Ad Requests
+Category: Metric - Sellside
+Definition: Count of SERPs with at least 1 Ad 
+
+---
+Term: Page Views (AFS/RSoC)
+Category: Metric - Sellside and/or Serving
+Definition: The loading of the page that displays search results and search ads
+
+---
+Term: Ad Requests
+Category: Metric - Sellside
+Definition: A request for Ads whether matched or not.
+Status: Phase 2
+
+---
+Term: Account Name
+Category: Dimensions (Account) Attribute
+Definition: The specific name of the advertising account.
+
+---
+Term: Forcekeys
+Category: Dimensions (Keywords)
+Definition: A specific predefined list or set of keywords or targeting phrases considered strategically important or mandatory for certain campaigns.
+
+---
+Term: Impressions (Sellside)
+Category: Metric - Sellside
+Definition: An impression is counted for each ad request where at least one ad has been downloaded to the user's device and has begun to load. It is the number of ad units (for content ads) or search queries (for search ads) that showed ads.
+Status: We only have Ad Impressions for sellside it seems.
+
+We need to cleanup definitions and probably add columns to disambiguate between ad impresssions and page impressions and buyside vs sellside.
+We need ability to disambiguate RSoc Online vs RSoC Direct vs other sellside network monetization type/flow.

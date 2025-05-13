@@ -1,6 +1,10 @@
-1.campaign_performance_daily
-2.ad_group_performance_daily
-3.keyword_performance_daily
-4.google_aff_performance_daily
-5.page_view_revenue
+1.ANALYTICS.BUYSIDE.CAMPAIGN_PERFORMANCE_DAILY
+2.ANALYTICS.BUYSIDE.ad_group_performance_daily
+3.ANALYTICS.BUYSIDE.keyword_performance_daily
+4.ANALYTICS.BUYSIDE.GOOGLE_ADS_FULL_FUNNEL_DAILY
+5.ANALYTICS.REVENUE.page_view_revenue
+6.DE_INGRESS.GOOGLE_ADS.CAMPAIGN_PERFORMANCE_DAILY 
+    Only use DE_INGRESS.GOOGLE_ADS.CAMPAIGN_PERFORMANCE_DAILY to filter or retrieve campaign level data 
+    when data is not available in the analytics schema.  For example, "SEGMENTS_AD_NETWORK_TYPE".
+    Do not use it for metrics.  It must be a part of a query using the tables from the ANALYTICS.BUYSIDE database/schema.
 

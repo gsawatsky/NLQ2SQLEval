@@ -149,17 +149,17 @@ models:
         sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.GROSS_CLAWBACK}
 
       - name: sellside_clicks_external
-        description: "Total external sell-side clicks"
+        description: "Total external sell-side clicks.  These are paid clicks ingested from the sell-side network such as Google Adsense; however, they may subsitute in internal paid clicks in cases where the sellside-network does not provide the sellside-clicks due to low click volumes."
         type: sum
         sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SELLSIDE_CLICKS_EXTERNAL}
 
       - name: sellside_clicks_internal
-        description: "Total internal sell-side clicks"
+        description: "Total internal sell-side clicks.  These are clicks tracked by our internal system and may or may not be paid clicks.  Do not combine with external sell-side clicks."
         type: sum
         sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SELLSIDE_CLICKS_INTERNAL}
 
       - name: spam_clicks
-        description: "Total spam clicks"
+        description: "Total spam clicks estimated internally based on the spam clicks ingested from the sell-side network."
         type: sum
         sql: ${ANALYTICS.REVENUE.PAGE_VIEW_REVENUE.SPAM_CLICKS}
 

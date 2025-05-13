@@ -1,23 +1,16 @@
 from pydantic import BaseModel
 from typing import Optional, List
 
-class BaselineSQLCreate(BaseModel):
-    sql_text: str
 
-class BaselineSQLRead(BaseModel):
-    id: int
-    sql_text: str
-    class Config:
-        from_attributes = True
+
+
 
 class NLQCreate(BaseModel):
     nlq_text: str
-    baseline_sql_text: str
 
 class NLQRead(BaseModel):
     id: int
     nlq_text: str
-    baseline_sql: BaselineSQLRead
     class Config:
         from_attributes = True
 

@@ -88,7 +88,7 @@ SNOWFLAKE_SCHEMA=your_schema
 NLQ2SQLEval/
 ├── app/                  # Backend FastAPI application
 │   ├── api/             # API endpoints
-│   │   ├── baseline_sql.py
+│   │   ├── .py
 │   │   ├── evaluate.py
 │   │   ├── llm_config.py
 │   │   └── prompt_set.py
@@ -214,11 +214,7 @@ Below is a list of the main backend API endpoints provided by the NLQ2SQLEval sy
 
 ### NLQ (Natural Language Query)
 - `GET /nlqs` — List all NLQs
-- `POST /nlqs` — Create a new NLQ (with baseline SQL)
-
-### Baseline SQL
-- `GET /baseline_sqls` — List all baseline SQL queries
-- `POST /baseline_sqls` — Create a new baseline SQL
+- `POST /nlqs` — Create a new NLQ 
 
 ### Prompt Sets
 - `GET /prompt_sets` — List all prompt sets
@@ -250,6 +246,11 @@ Below is a list of the main backend API endpoints provided by the NLQ2SQLEval sy
 
 ### Prompt Templating
 - `POST /prompt_template` — Render a prompt template with dynamic substitution/macros
+
+---
+### Reset test data
+
+- `python scripts/reset_evaluation_results.py`
 
 ---
 

@@ -29,7 +29,7 @@ def call_gemini_llm(prompt: str, llm_config):
     logger.info(f"LLM API call payload: {json.dumps(payload, indent=2)}")
     logger.info(f"LLM API call full prompt:\n{prompt}")
     try:
-        resp = requests.post(url, json=payload, headers=headers, timeout=30)
+        resp = requests.post(url, json=payload, headers=headers, timeout=60)
         resp.raise_for_status()
         data = resp.json()
         # Gemini returns generated text in a nested structure
@@ -109,7 +109,7 @@ def evaluate_run(req: EvaluateRunRequest, db: Session = Depends(get_db)):
                 prompt_set_name = prompt_set.name
                 macros = {
                     "NLQ": nlq.nlq_text,
-                    "BASELINE_SQL": nlq.baseline_sql.sql_text if nlq.baseline_sql else "",
+                    "BASELINE_SQL": "",
                     # Add more as needed
                 }
                 try:
@@ -128,8 +128,9 @@ def evaluate_run(req: EvaluateRunRequest, db: Session = Depends(get_db)):
                             end = time.perf_counter()
                             llm_response_time_ms = int((end - start) * 1000)
                         else:
-                            generated_sql = f"-- MOCK SQL for NLQ: {nlq.nlq_text} / LLM: {llm.name} / PromptSet: {prompt_set_id}"
+                            generated_sql = f"SELECT 1; -- MOCK SQL for NLQ: {nlq.nlq_text} / LLM: {llm.name} / PromptSet: {prompt_set_id}"
                             llm_response_time_ms = 0
+                        # Do not prepend any comment block here. Comment block will be added after result.id is known.
                         logger.info(f"    Generated SQL: {generated_sql[:80]}{'...' if len(generated_sql) > 80 else ''}")
                     except Exception as llm_exc:
                         logger.error(f"    Error calling LLM: {llm_exc}")
@@ -148,6 +149,29 @@ def evaluate_run(req: EvaluateRunRequest, db: Session = Depends(get_db)):
                         llm_response_time_ms=llm_response_time_ms
                     )
                     db.add(result)
+        db.commit()
+        # After commit, update each result to prepend the single, final comment block with NLQ, Prompt/Model, Unique ID, and Result ID
+        results = db.query(core.GeneratedResult).filter(core.GeneratedResult.validation_run_id == run.id).all()
+        import random, string
+        for result in results:
+            nlq = db.query(core.NLQ).filter(core.NLQ.id == result.nlq_id).first()
+            prompt_set = db.query(core.PromptSet).filter(core.PromptSet.id == result.prompt_set_id).first()
+            llm = db.query(core.LLMConfig).filter(core.LLMConfig.id == result.llm_config_id).first()
+            unique_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            sql_comment = f"-- NLQ: {nlq.nlq_text}\n-- Prompt/Model: {prompt_set.name} / {llm.name}\n-- Unique ID: {unique_id}\n-- Result ID: {result.id}\n\n"
+            # Remove any previous similar comment block if present
+            sql_lines = result.generated_sql.splitlines()
+            # Remove lines that look like our comment block (start with -- NLQ:, -- Prompt/Model:, -- Unique ID:, -- Result ID:)
+            filtered_sql_lines = []
+            skipping = True
+            for line in sql_lines:
+                if skipping and (line.startswith('-- NLQ:') or line.startswith('-- Prompt/Model:') or line.startswith('-- Unique ID:') or line.startswith('-- Result ID:')):
+                    continue
+                else:
+                    skipping = False
+                    filtered_sql_lines.append(line)
+            new_generated_sql = sql_comment + '\n'.join(filtered_sql_lines).lstrip('\n')
+            result.generated_sql = new_generated_sql
         db.commit()
         logger.info(f"Evaluation run {run.id} completed.")
         return EvaluateRunResponse(run_id=run.id)

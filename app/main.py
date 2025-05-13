@@ -6,7 +6,7 @@ logging.basicConfig(
 )
 
 from fastapi import FastAPI
-from app.api import nlq, baseline_sql, prompt_set, prompt_component, llm_config, validation_run, generated_result, run_details, prompt_templating, evaluate
+from app.api import nlq, prompt_set, prompt_component, llm_config, validation_run, generated_result, run_details, prompt_templating, evaluate
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -20,7 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(nlq.router)
-app.include_router(baseline_sql.router)
+
 app.include_router(prompt_set.router)
 app.include_router(prompt_component.router)
 app.include_router(llm_config.router)

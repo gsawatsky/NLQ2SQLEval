@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Grid, Paper, Typography, TextField, Button, Divider, MenuItem, Select, InputLabel, FormControl, CircularProgress, Box, OutlinedInput, Chip, Alert, Dialog, DialogTitle, DialogContent, IconButton
+  Grid, Paper, Typography, TextField, Button, Divider, MenuItem, Select, InputLabel, FormControl, CircularProgress, Box, OutlinedInput, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Autocomplete
 } from '@mui/material';
+// Removed all duplicate imports for Dialog, DialogTitle, DialogContent, DialogActions, Button
+
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { fetchPromptSets, fetchLLMConfigs, runEvaluation, fetchRunDetails, createNlq, updateGeneratedResult, explainQuery } from '../api';
+import { fetchPromptSets, fetchLLMConfigs, runEvaluation, fetchRunDetails, createNlq, updateGeneratedResult, explainQuery, fetchBaselineSqlForNlq, searchNlqByText } from '../api';
 
 interface PromptSet {
   id: number;
@@ -23,8 +25,43 @@ interface LLMConfig {
 const MAX_EVALS = 4;
 
 const EvaluateScreen: React.FC = () => {
+  // --- NLQ Autocomplete State ---
+  const [nlqSuggestions, setNlqSuggestions] = useState<string[]>([]);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced fetch for NLQ suggestions
+  const debouncedFetchSuggestions = (input: string) => {
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    if (!input || input.trim().length === 0) {
+      setNlqSuggestions([]);
+      return;
+    }
+    debounceTimeout.current = setTimeout(async () => {
+      try {
+        // searchNlqByText returns an object or array; adapt as needed
+        const result = await searchNlqByText(input);
+        // If backend returns array of NLQs, adapt here:
+        if (Array.isArray(result)) {
+          setNlqSuggestions(result.map((x: any) => x.nlq_text || x.text || x));
+        } else if (result && result.nlq_text) {
+          setNlqSuggestions([result.nlq_text]);
+        } else {
+          setNlqSuggestions([]);
+        }
+      } catch {
+        setNlqSuggestions([]);
+      }
+    }, 300); // 300ms debounce
+  };
+
+  // Baseline selection UI state
+  const [selectedBaselineId, setSelectedBaselineId] = useState<number | null>(null);
+  const [settingBaseline, setSettingBaseline] = useState(false);
+  const [baselineModalOpen, setBaselineModalOpen] = useState(false);
+  const [baselineSqlText, setBaselineSqlText] = useState<string | null>(null);
+  const [baselineSqlLoading, setBaselineSqlLoading] = useState(false);
+  const [baselineSqlError, setBaselineSqlError] = useState<string | null>(null);
   const [nlq, setNlq] = useState('');
-  const [baselineSql, setBaselineSql] = useState('');
   const [promptSets, setPromptSets] = useState<PromptSet[]>([]);
   const [llmConfigs, setLlmConfigs] = useState<LLMConfig[]>([]);
   const [selectedPromptSets, setSelectedPromptSets] = useState<number[]>([]);
@@ -76,20 +113,32 @@ const EvaluateScreen: React.FC = () => {
     loadData();
   }, []);
 
+  // Sync selectedBaselineId to the current baseline when runDetails change
+  useEffect(() => {
+    if (runDetails && runDetails.generated_results && runDetails.generated_results.length > 0) {
+      const baseline = runDetails.generated_results.find((r: any) => r.is_baseline);
+      setSelectedBaselineId(baseline ? baseline.id : runDetails.generated_results[0].id);
+    } else {
+      setSelectedBaselineId(null);
+    }
+  }, [runDetails]);
+
   // Sync feedback state with results when runDetails changes
   useEffect(() => {
     if (!runDetails || !runDetails.generated_results) return;
-    const newState: any = {};
-    runDetails.generated_results.forEach((r: any) => {
-      newState[r.id] = {
-        tag: r.human_evaluation_tag || '',
-        comment: r.comments || '',
-        saving: false,
-        saveSuccess: false,
-        saveError: null,
-      };
+    setFeedbackState(prev => {
+      const newState: any = {};
+      runDetails.generated_results.forEach((r: any) => {
+        newState[r.id] = {
+          tag: prev[r.id]?.tag ?? r.human_evaluation_tag ?? '',
+          comment: prev[r.id]?.comment ?? r.comments ?? '',
+          saving: false,
+          saveSuccess: false,
+          saveError: null,
+        };
+      });
+      return newState;
     });
-    setFeedbackState(newState);
   }, [runDetails]);
 
   const handleFeedbackChange = (resultId: number, field: 'tag' | 'comment', value: string) => {
@@ -105,19 +154,45 @@ const EvaluateScreen: React.FC = () => {
   };
 
   const handleSaveFeedback = async (resultId: number) => {
+    const feedback = feedbackState[resultId];
+    if (!feedback) return;
+    
+    // Add debugging
+    console.log('Saving feedback for result ID:', resultId);
+    console.log('Feedback data:', feedback);
+    
     setFeedbackState(prev => ({
       ...prev,
       [resultId]: { ...prev[resultId], saving: true, saveSuccess: false, saveError: null },
     }));
     try {
-      const { tag, comment } = feedbackState[resultId];
-      await updateGeneratedResult(resultId, {
-        human_evaluation_tag: tag,
-        comments: comment,
+      // Check if this is setting a baseline
+      const isSettingBaseline = feedback.tag === 'Correct and use as new baseline';
+      console.log('Is setting baseline:', isSettingBaseline);
+      
+      const result = await updateGeneratedResult(resultId, {
+        human_evaluation_tag: feedback.tag,
+        comments: feedback.comment,
       });
+      console.log('Update result response:', result);
+      
+      // Refresh run details after feedback update
+      if (runResult) {
+        console.log('Refreshing run details after feedback update');
+        const details = await fetchRunDetails(runResult);
+        console.log('Updated run details:', details);
+        setRunDetails(details);
+      }
+      
       setFeedbackState(prev => ({
         ...prev,
-        [resultId]: { ...prev[resultId], saving: false, saveSuccess: true },
+        [resultId]: {
+          ...prev[resultId],
+          tag: feedback.tag, // Ensure tag is preserved
+          comment: feedback.comment, // Also ensure comment is preserved
+          saving: false,
+          saveSuccess: true
+        },
       }));
       setTimeout(() => {
         setFeedbackState(prev => ({
@@ -126,6 +201,7 @@ const EvaluateScreen: React.FC = () => {
         }));
       }, 2000);
     } catch (e: any) {
+      console.error('Error saving feedback:', e);
       setFeedbackState(prev => ({
         ...prev,
         [resultId]: { ...prev[resultId], saving: false, saveError: e.message || 'Error saving feedback' },
@@ -156,33 +232,50 @@ const EvaluateScreen: React.FC = () => {
     selectedLlmConfigs.length > 0 &&
     !running;
 
-  const handleRunEvaluation = async () => {
+const handleRunEvaluation = async () => {
+  setRunning(true);
+  setError(null);
+  setShowApiError(false);
+  setRunResult(null);
+  setRunDetails(null);
+  let nlqId: number | null = null;
+  try {
+    const existingNlqs = await searchNlqByText(nlq);
+    if (Array.isArray(existingNlqs) && existingNlqs.length > 0) {
+      nlqId = existingNlqs[0].id;
+      console.log('Reusing existing NLQ ID:', nlqId);
+    } else {
+      // Not found, create new
+      const nlqObj = await createNlq(nlq);
+      nlqId = nlqObj.id;
+      console.log('Created new NLQ ID:', nlqId);
+    }
+    // Ensure nlqId is a number
+    if (nlqId === null) {
+      throw new Error('NLQ ID could not be determined.');
+    }
+    // Run evaluation
     try {
-      setRunning(true);
-      setRunResult(null);
-      setRunDetails(null);
-      setError(null);
-
-      // 1. Create NLQ in backend from user input
-      const nlqResponse = await createNlq(nlq, baselineSql);
-      const nlqId = nlqResponse.id;
-
-      // 2. Run evaluation with the new NLQ ID
-      const { run_id } = await runEvaluation([nlqId], selectedPromptSets, selectedLlmConfigs);
-      setRunResult(run_id);
-
-      // 3. Fetch run details/results
-      const details = await fetchRunDetails(run_id);
+      const result = await runEvaluation([nlqId], selectedPromptSets, selectedLlmConfigs);
+      setRunResult(result.run_id);
+      // Fetch run details
+      const details = await fetchRunDetails(result.run_id);
       setRunDetails(details);
     } catch (e: any) {
       setError(e.message);
+      setShowApiError(true);
     } finally {
       setRunning(false);
     }
-  };
+  } catch (e: any) {
+    setError(e.message || 'Unknown error');
+    setShowApiError(true);
+    setRunning(false);
+  }
+};
 
-  // Helper to get generated SQL for a combo
-  function getGeneratedSql(promptSetId: number, llmConfigId: number): string {
+// Helper to get generated SQL for a combo
+function getGeneratedSql(promptSetId: number, llmConfigId: number): string {
     if (!runDetails || !runDetails.generated_results) return '';
     const result = runDetails.generated_results.find((r: any) =>
       r.prompt_set_id === promptSetId && r.llm_config_id === llmConfigId
@@ -197,7 +290,14 @@ const EvaluateScreen: React.FC = () => {
     setExplainText('');
     setExplainError(null);
     try {
-      // Use the baselineSql from state and generated_sql from the result
+      // Dynamically fetch the baseline SQL for this NLQ
+      let baselineSql = '';
+      try {
+        const baselineResult = await fetchBaselineSqlForNlq(result.nlq_id);
+        baselineSql = baselineResult.generated_sql;
+      } catch (e) {
+        baselineSql = '';
+      }
       const explanation = await explainQuery(baselineSql, result.generated_sql, result.llm_config_id);
       setExplainText(explanation);
     } catch (e: any) {
@@ -214,26 +314,23 @@ const EvaluateScreen: React.FC = () => {
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
           <Box sx={{ flex: 1, minWidth: 300 }}>
             <Typography variant="subtitle1" gutterBottom>Natural Language Query</Typography>
-            <TextField
-              label="NLQ"
-              multiline
-              minRows={3}
-              fullWidth
-              value={nlq}
-              onChange={e => setNlq(e.target.value)}
-              sx={{ mb: 2 }}
-            />
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 300 }}>
-            <Typography variant="subtitle1" gutterBottom>Baseline SQL</Typography>
-            <TextField
-              label="Baseline SQL"
-              multiline
-              minRows={3}
-              fullWidth
-              value={baselineSql}
-              onChange={e => setBaselineSql(e.target.value)}
-              sx={{ mb: 2 }}
+            <Autocomplete
+              freeSolo
+              filterOptions={x => x} // disable built-in filtering
+              options={nlqSuggestions}
+              inputValue={nlq}
+              onInputChange={(_event, newInputValue, reason) => {
+                setNlq(newInputValue);
+                if (reason === 'input') {
+                  debouncedFetchSuggestions(newInputValue);
+                }
+              }}
+              onChange={(_event, value) => {
+                if (typeof value === 'string') setNlq(value);
+              }}
+              renderInput={params => (
+                <TextField {...params} label="NLQ" multiline minRows={3} fullWidth sx={{ mb: 2 }} />
+              )}
             />
           </Box>
           <Box sx={{ flex: 1, minWidth: 250 }}>
@@ -321,20 +418,43 @@ const EvaluateScreen: React.FC = () => {
             Evaluation run started! Run ID: {runResult}
           </Alert>
         )}
-        <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'row', gap: 2 }}>
-          {/* Baseline SQL Panel */}
-          <Paper elevation={2} sx={{ minWidth: 320, maxWidth: 400, flex: '0 0 320px', p: 2, mr: 2, bgcolor: '#f5f5f5' }}>
-            <Typography variant="subtitle2" color="text.secondary">Baseline SQL</Typography>
-            <TextField
-              value={baselineSql}
-              multiline
-              minRows={6}
-              maxRows={12}
-              fullWidth
-              InputProps={{ readOnly: true }}
-              sx={{ mt: 1 }}
-            />
-          </Paper>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 2 }}>
+  <Button variant="outlined" size="small" onClick={async () => {
+    setBaselineSqlError(null);
+    setBaselineSqlLoading(true);
+    setBaselineModalOpen(true);
+    try {
+      // Get the NLQ ID from the current run details
+      const nlqId = runDetails?.nlq_id || (runDetails?.generated_results?.[0]?.nlq_id);
+      console.log('Fetching baseline SQL for NLQ ID:', nlqId);
+      console.log('Current runDetails:', runDetails);
+      
+      if (!nlqId) throw new Error('No NLQ ID found');
+      
+      // Fetch the baseline SQL directly from the API
+      // This will find the baseline SQL for this NLQ, even if it's from a previous run
+      console.log(`Calling API: /nlqs/${nlqId}/baseline_sql`);
+      const baselineResult = await fetchBaselineSqlForNlq(nlqId);
+      console.log('Baseline result:', baselineResult);
+      
+      if (!baselineResult || !baselineResult.generated_sql) {
+        throw new Error('No baseline SQL found for this NLQ');
+      }
+      setBaselineSqlText(baselineResult.generated_sql);
+    } catch (e: any) {
+      console.error('Error fetching baseline SQL:', e);
+      setBaselineSqlText(null);
+      setBaselineSqlError(e.message || 'No baseline SQL found for this NLQ');
+    } finally {
+      setBaselineSqlLoading(false);
+    }
+  }}>
+    Show Baseline SQL
+  </Button>
+
+</Box>
+
+<Box sx={{ flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'row', gap: 2 }}>
           {/* Dynamic Evaluation Panels */}
           {evalCombos.map(({ promptSet, llm }, idx) => {
             const result = runDetails && runDetails.generated_results
@@ -399,6 +519,12 @@ const EvaluateScreen: React.FC = () => {
                 {/* FEEDBACK UI */}
                 {result && (
                   <Box sx={{ mt: 2 }}>
+                    {/* Baseline Badge */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      {result.is_baseline && (
+                        <Chip label="Baseline" color="success" size="small" />
+                      )}
+                    </Box>
                     <Typography variant="body2" sx={{ mb: 1 }}>Your Feedback</Typography>
                     <TextField
                       select
@@ -411,6 +537,7 @@ const EvaluateScreen: React.FC = () => {
                     >
                       <MenuItem value="">Select...</MenuItem>
                       <MenuItem value="correct">Correct</MenuItem>
+                      <MenuItem value="Correct and use as new baseline">Correct and use as new baseline</MenuItem>
                       <MenuItem value="partially_correct">Partially Correct</MenuItem>
                       <MenuItem value="incorrect">Incorrect</MenuItem>
                     </TextField>
@@ -467,6 +594,26 @@ const EvaluateScreen: React.FC = () => {
         )}
       </DialogContent>
     </Dialog>
+  {/* Baseline SQL Modal */}
+  <Dialog open={baselineModalOpen} onClose={() => setBaselineModalOpen(false)} maxWidth="md" fullWidth>
+    <DialogTitle>Baseline SQL</DialogTitle>
+    <DialogContent dividers sx={{ minHeight: 200, maxHeight: 500, minWidth: 400, maxWidth: 900, overflow: 'auto' }}>
+      {baselineSqlLoading ? (
+        <Typography variant="body2">Loading...</Typography>
+      ) : baselineSqlError ? (
+        <Typography color="error" variant="body2">{baselineSqlError}</Typography>
+      ) : baselineSqlText ? (
+        <Box sx={{ width: '100%', height: '100%', overflow: 'auto' }}>
+          <pre style={{ whiteSpace: 'pre', overflow: 'auto', margin: 0 }}>{baselineSqlText}</pre>
+        </Box>
+      ) : (
+        <Typography variant="body2">No baseline SQL available for this NLQ.</Typography>
+      )}
+    </DialogContent>
+    <DialogActions>
+      <Button onClick={() => setBaselineModalOpen(false)}>Close</Button>
+    </DialogActions>
+  </Dialog>
   </Box>
   );
 };
