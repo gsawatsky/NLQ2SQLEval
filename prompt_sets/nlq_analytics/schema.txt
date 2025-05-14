@@ -1,0 +1,43 @@
+CREATE TABLE nlqs (
+        id INTEGER NOT NULL, 
+        nlq_text TEXT NOT NULL,  -- Natural Language Query
+);
+
+CREATE TABLE llm_configs (
+        id INTEGER NOT NULL, 
+        name VARCHAR NOT NULL,  -- LLM Configuration Name
+        api_key VARCHAR NOT NULL,  -- LLM API Key
+        model VARCHAR NOT NULL,  -- LLM Model
+
+);
+
+CREATE TABLE prompt_sets (
+        id INTEGER NOT NULL, 
+        name VARCHAR NOT NULL,  -- Prompt Set Name
+        description VARCHAR,  -- Prompt Set Description
+
+);
+CREATE TABLE validation_runs (
+        id INTEGER NOT NULL, 
+        timestamp DATETIME,  -- Validation Run Timestamp
+        llm_config_id INTEGER,  -- LLM Configuration ID
+        prompt_set_id INTEGER,  -- Prompt Set ID
+        nlq_id INTEGER,  -- Natural Language Query ID
+        parameters JSON,  -- Validation Run Parameters
+
+);
+
+CREATE TABLE generated_results (
+        id INTEGER NOT NULL, 
+        validation_run_id INTEGER,  -- Validation Run ID
+        nlq_id INTEGER,  -- Natural Language Query ID
+        llm_config_id INTEGER,  -- LLM Configuration ID
+        prompt_set_id INTEGER NOT NULL,  -- Prompt Set ID
+        generated_sql TEXT NOT NULL,  -- Generated SQL
+        full_prompt TEXT NOT NULL,  -- Full Prompt
+        human_evaluation_tag VARCHAR,  -- Human Evaluation Tag
+        comments TEXT,  -- Comments
+        llm_response_time_ms INTEGER,  -- LLM Response Time (ms).  This is the only true metric.
+        is_baseline BOOLEAN NOT NULL,  -- Is Baseline SQL query given an nlq_id
+
+);

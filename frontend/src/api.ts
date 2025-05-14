@@ -48,13 +48,33 @@ export async function fetchBaselineSqlForNlq(nlqId: number) {
   return res.json();
 }
 
-export async function updateGeneratedResult(resultId: number, data: { human_evaluation_tag?: string; comments?: string }) {
+export async function updateGeneratedResult(resultId: number, data: { human_evaluation_tag?: string | null; comments?: string }) {
   const res = await fetch(`http://localhost:8000/generated_results/${resultId}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to update feedback");
+  return res.json();
+}
+
+export async function generateSqlFromNlq(nlq: string, promptSetId: number, llmConfigId: number) {
+  const res = await fetch("http://localhost:8000/api/nlq-analytics/generate-sql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nlq, prompt_set_id: promptSetId, llm_config_id: llmConfigId }),
+  });
+  if (!res.ok) throw new Error("Failed to generate SQL");
+  return res.json();
+}
+
+export async function executeSqlQuery(sql: string) {
+  const res = await fetch("http://localhost:8000/api/nlq-analytics/execute-sql", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sql }),
+  });
+  if (!res.ok) throw new Error("Failed to execute SQL");
   return res.json();
 }
 

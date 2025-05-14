@@ -171,7 +171,7 @@ const EvaluateScreen: React.FC = () => {
       console.log('Is setting baseline:', isSettingBaseline);
       
       const result = await updateGeneratedResult(resultId, {
-        human_evaluation_tag: feedback.tag,
+        human_evaluation_tag: feedback.tag === '' ? null : feedback.tag,
         comments: feedback.comment,
       });
       console.log('Update result response:', result);
@@ -355,9 +355,9 @@ function getGeneratedSql(promptSetId: number, llmConfigId: number): string {
                 )}
                 disabled={disableSelections}
               >
-                {promptSets.map(ps => (
-                  <MenuItem key={ps.id} value={ps.id}>{ps.name}</MenuItem>
-                ))}
+                {promptSets.filter(ps => !ps.name.toLowerCase().includes('nlq')).map((ps) => (
+                <MenuItem key={ps.id} value={ps.id}>{ps.name}</MenuItem>
+              ))}
               </Select>
             </FormControl>
           </Box>

@@ -1,0 +1,57 @@
+As a Sqlite expert, please generate a Sql query for the following natural language query:
+
+{{NLQ}}
+
+against the following schema:
+
+{{include:schema.txt}}
+
+STRICT Instructions for SQL Generation:
+
+- Your response should be the raw SQL query only, without any markdown formatting or additional text.
+    - For example, do not wrap the Sql results in ```sql or ```
+- If the query is a SELECT statement, please include the column names in the response.
+- The Sql query should be properly formulated, use valid syntax (no missing SELECT, FROM, etc...) and should not contain any errors, invalid characters, invalid identifiers, etc... for SQLite.
+- Put all assumptions, ambiguities, and heuristics used in a comment at the top of the Sql query.
+- If you cannot formulate a valid or semantically sound SQL query with > 90% confidence, please return the message "Cannot formulate a valid SQL query for the given natural language query." and explain why and suggest an alternative natural language query that is semantically similar but possible while keeping it concise.
+- string comparisons should be case-insensitive.
+
+
+Additional Instruction for Visualization:
+
+- At the top of your SQL output, include a structured comment block in the following format:
+  -- Graph Suggestion:
+  -- chart_type: [bar|stacked_bar|grouped_bar|scatter|line|heatmap|pie|box|pareto]
+  -- x_axis: [column_name]
+  -- y_axis: [column_name or list]
+  -- (Optional) group_by: [column_name]
+  -- (Optional) notes: [short explanation]
+- Always provide the Graph Suggestion block based on the intent of the query and the returned columns. Example:
+  -- Graph Suggestion:
+  -- chart_type: scatter
+  -- x_axis: llm_response_time_s
+  -- y_axis: evaluation_score
+  -- group_by: prompt_set_name
+  -- notes: Shows the trade-off between speed and accuracy for each prompt set.
+
+Other Terms and Definitions:
+
+- LLM Response Time: The time it takes for the LLM to generate a response to the natural language query.
+- Evaluation Score:
+    - If human_evaluation_tag is "Correct" then the score is 5.
+    - If human_evaluation_tag is "Incorrect" then the score is 0.
+    - If human_evaluation_tag is "Partially Correct" then the score is 0.5. 
+    - If human_evaluation_tag is "Correct and use as new baseline" then the score is 10.
+    - If human_evaluation_tag is "Cannot formulate a valid SQL query for the given natural language query." then the score is -1.
+    - aka: Query Quality Score, Query Score, Query Evaluation Score, Best Performing Prompt Set and/or LLMs.
+- Most accurate Prompt Set/LLM Combinations:
+    - Take the average Evaluation Score for each Prompt Set/LLM combination in the generated_results table.
+    - aka: Most reliable Prompt Set/LLM Combinations.
+- Best performing Prompt Set/LLM Combinations:
+    - Average Evaluation Score and LLM Response Time for each Prompt Set/LLM combination in the generated_results table.
+    - aka: Best Performing Prompt Set/LLM Combinations.  
+    - Instructions:  Scale the Evaluation Score to a maximum of 10 and the LLM Response Time to seconds. Create a result set optimized for a scaled/stacked/side-by-side bar chart with Evaluation Score and LLM Response Time for each Prompt Set/LLM combination.
+  - LLM/Prompt Set Combination or vice-versa:
+    - aka: Prompt Set/LLM Combinations.
+    - Instructions: Create a new column that combines the LLM name and Prompt Set name into a single string. 
+    
