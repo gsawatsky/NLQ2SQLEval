@@ -41,7 +41,11 @@ frontend/.next/
 
 # Database
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
+*.sqlite3-*
+*.sqlite
 
 # Logs
 *.log
