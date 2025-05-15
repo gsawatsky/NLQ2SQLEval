@@ -60,3 +60,12 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Sensitive Files
+credentials/
+*.json
+.env
+
+# Previously sensitive files
+snowflake_smoke_test.py
+scripts/init_snowflake.py

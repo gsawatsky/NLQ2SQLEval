@@ -72,16 +72,35 @@ cd frontend
 npm start
 ```
 
-### Environment Variables
-Create a `.env` file in the root directory with the following variables:
-```bash
-GEMINI_API_KEY=your_gemini_api_key
-SNOWFLAKE_ACCOUNT=your_account
-SNOWFLAKE_USER=your_username
-SNOWFLAKE_PASSWORD=your_password
-SNOWFLAKE_DATABASE=your_database
-SNOWFLAKE_SCHEMA=your_schema
-```
+### Environment Setup
+
+1. **Create Environment File**
+   Copy `.env.example` to create your `.env` file:
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit `.env` with your actual values:
+   ```bash
+   SNOWFLAKE_ENCRYPTION_KEY=your_secure_encryption_key_here
+   SNOWFLAKE_ENCRYPTION_SALT=your_secure_salt_here
+   ```
+   Generate secure values using:
+   ```bash
+   python3 -c "import os; import base64; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+   ```
+
+2. **Set Up Credentials**
+   - Copy `credentials/gemini_credentials.json.template` to create your credentials file:
+     ```bash
+     cp credentials/gemini_credentials.json.template credentials/gemini_credentials.json
+     ```
+   - Edit `gemini_credentials.json` with your actual Gemini API credentials
+
+**Important Security Note:**
+- Never commit `.env` or any credentials files to version control
+- Always use secure methods to share credentials with team members
+- Regularly rotate sensitive credentials
+- Use environment-specific credentials (development vs production)
 
 ## Project Structure
 ```
