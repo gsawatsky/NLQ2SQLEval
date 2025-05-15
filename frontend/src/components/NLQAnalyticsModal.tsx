@@ -33,6 +33,9 @@ import {
   Pie 
 } from 'recharts';
 import { fetchPromptSets, fetchLLMConfigs, generateSqlFromNlq, executeSqlQuery } from '../api';
+import { useSnowflakeContext } from '../contexts/SnowflakeContext';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
 
 interface PromptSet {
   id: number;
@@ -47,25 +50,26 @@ interface LLMConfig {
   description?: string;
 }
 
+interface SnowflakeConnection {
+  id: string;
+  name: string;
+}
+
 interface NLQAnalyticsModalProps {
   open: boolean;
   onClose: () => void;
 }
-// Removed duplicate interface and all dummy data.
 
 export default function NLQAnalyticsModal({ open, onClose }: NLQAnalyticsModalProps) {
-  // ...existing state...
-  const chartTypes = [
-    { value: 'bar', label: 'Bar Chart' },
-    { value: 'stacked_bar', label: 'Stacked Bar Chart' },
-    { value: 'grouped_bar', label: 'Grouped Bar Chart' },
-    { value: 'scatter', label: 'Scatter Plot' },
-    { value: 'line', label: 'Line Chart' },
-    { value: 'heatmap', label: 'Heatmap' },
-    { value: 'pie', label: 'Pie Chart' },
-    { value: 'box', label: 'Box Plot' },
-    { value: 'pareto', label: 'Pareto Chart' },
-  ];
+  // Context
+  const {
+    connections,
+    loading: connectionsLoading,
+    error: connectionsError
+  } = useSnowflakeContext();
+
+  // State
+  const [selectedConnection, selectConnection] = useState<string | SnowflakeConnection>('local_db');
   const [chartType, setChartType] = React.useState<string>('bar');
   const [tab, setTab] = useState(0);
   const [nlq, setNlq] = useState('');
@@ -78,15 +82,124 @@ export default function NLQAnalyticsModal({ open, onClose }: NLQAnalyticsModalPr
   const [querying, setQuerying] = useState(false);
   const [sqlResult, setSqlResult] = useState<string>('');
   const [tableResult, setTableResult] = useState<any[]>([]);
-  const [tableColumns, setTableColumns] = useState<any[]>([]);
+  const [tableColumns, setTableColumns] = useState<GridColDef[]>([]);
   const [xCol, setXCol] = React.useState<string | null>(null);
   const [yCol, setYCol] = React.useState<string[]>([]);
+
+  // Chart types
+  const chartTypes = [
+    { value: 'bar', label: 'Bar Chart' },
+    { value: 'stacked_bar', label: 'Stacked Bar Chart' },
+    { value: 'grouped_bar', label: 'Grouped Bar Chart' },
+    { value: 'scatter', label: 'Scatter Plot' },
+    { value: 'line', label: 'Line Chart' },
+    { value: 'heatmap', label: 'Heatmap' },
+    { value: 'pie', label: 'Pie Chart' },
+    { value: 'box', label: 'Box Plot' },
+    { value: 'pareto', label: 'Pareto Chart' },
+  ];
 
   // Helper to parse chart_type from SQL comments
   function parseChartTypeFromSQL(sql: string): string | undefined {
     const match = sql.match(/--\s*chart_type:\s*([a-zA-Z0-9_]+)/i);
     return match ? match[1] : undefined;
   }
+
+  // Handler for Re-run Query button
+  const handleRerunQuery = async () => {
+    setQuerying(true);
+    setError(null);
+    try {
+      console.log('[NLQ Eval Analysis] Re-executing SQL with connection:', selectedConnection);
+      const execResp = await executeSqlQuery(sqlResult, selectedConnection);
+      if (execResp.error) {
+        setError(execResp.error);
+        setTableResult([]);
+        setTableColumns([]);
+        return;
+      }
+      const columns = execResp.columns.map((col: string) => ({
+        field: col,
+        headerName: col,
+        width: 160,
+      }));
+      const rows = execResp.rows.map((row: any[], idx: number) => {
+        const obj: any = { id: idx };
+        execResp.columns.forEach((col: string, i: number) => {
+          obj[col] = row[i];
+        });
+        return obj;
+      });
+      setTableColumns(columns);
+      setTableResult(rows);
+    } catch (e: any) {
+      setError(e.message || 'Failed to re-execute SQL');
+    } finally {
+      setQuerying(false);
+    }
+  };
+
+  // Main query handler
+  const handleRunQuery = async () => {
+    setQuerying(true);
+    setError(null);
+    setSqlResult('');
+    setTableResult([]);
+    setTableColumns([]);
+    try {
+      if (!selectedConnection) {
+        throw new Error('Please select a database connection first');
+      }
+      // 1. Generate SQL
+      const sqlResp = await generateSqlFromNlq(nlq, Number(promptSet), Number(llm));
+      console.log('[NLQ Eval Analysis] Generated SQL:', sqlResp.sql);
+      if (sqlResp.error) {
+        setError(sqlResp.error);
+        setSqlResult(sqlResp.sql || '');
+        setTab(0);
+        console.error('[NLQ Eval Analysis] SQL generation error:', sqlResp.error);
+        return;
+      }
+      setSqlResult(sqlResp.sql);
+      setTab(0); // Switch to SQL tab
+      // 2. Execute the SQL
+      console.log('[NLQ Eval Analysis] Executing SQL with connection:', selectedConnection);
+      const execResp = await executeSqlQuery(sqlResp.sql, selectedConnection);
+      console.log('[NLQ Eval Analysis] SQL execution response:', execResp);
+      if (execResp.error) {
+        setError(execResp.error);
+        setTableResult([]);
+        setTableColumns([]);
+        console.error('[NLQ Eval Analysis] SQL execution error:', execResp.error);
+        return;
+      }
+
+      // 3. Process results for DataGrid
+      const columns = execResp.columns.map((col: string) => ({
+        field: col,
+        headerName: col,
+        width: 160,
+      }));
+
+      const rows = execResp.rows.map((row: any[], idx: number) => {
+        const obj: any = { id: idx };
+        execResp.columns.forEach((col: string, i: number) => {
+          obj[col] = row[i];
+        });
+        return obj;
+      });
+
+      console.log('[NLQ Eval Analysis] DataGrid columns:', columns);
+      console.log('[NLQ Eval Analysis] DataGrid rows:', rows);
+      setTableColumns(columns);
+      setTableResult(rows);
+    } catch (e: any) {
+      setError(e.message || 'Failed to run query');
+      console.error('[NLQ Eval Analysis] Exception in handleRunQuery:', e);
+    } finally {
+      setQuerying(false);
+    }
+  };
 
   // When SQL changes, auto-set chart type if a recommendation is found
   React.useEffect(() => {
@@ -99,8 +212,7 @@ export default function NLQAnalyticsModal({ open, onClose }: NLQAnalyticsModalPr
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeof sqlResult === 'string' ? sqlResult : '']);
 
-  // All duplicate state variable declarations and dummy data have been removed from the rest of the file.
-
+  // Set default X & Y columns when table data changes
   React.useEffect(() => {
     const colOptions = tableColumns.filter((col: any) => col.field !== 'id');
     if (colOptions.length > 0) {
@@ -122,86 +234,19 @@ export default function NLQAnalyticsModal({ open, onClose }: NLQAnalyticsModalPr
       setXCol(null);
       setYCol([]);
     }
-  }, [tableColumns, tableResult]);
-
-  // Removed duplicate state declarations and dummy data section. Only the state at the top of the component remains.
-
-  const dummyRows: GridRowsProp = [
-    { id: 1, col1: 'Hello', col2: 'World' },
-    { id: 2, col1: 'Foo', col2: 'Bar' },
-  ];
-  const dummyColumns: GridColDef[] = [
-    { field: 'col1', headerName: 'Col1', width: 150 },
-    { field: 'col2', headerName: 'Col2', width: 150 },
-  ];
-  const dummyChartData = [
-    { name: 'A', value: 400 },
-    { name: 'B', value: 300 },
-    { name: 'C', value: 200 },
-  ];
-
-    // Use real backend API calls
-  const handleRunQuery = async () => {
-    setQuerying(true);
-    setError(null);
-    setSqlResult('');
-    setTableResult([]);
-    setTableColumns([]);
-    try {
-      // 1. Generate SQL
-      const sqlResp = await generateSqlFromNlq(nlq, Number(promptSet), Number(llm));
-      console.log('[NLQ Eval Analysis] Generated SQL:', sqlResp.sql);
-      if (sqlResp.error) {
-        setError(sqlResp.error);
-        setSqlResult(sqlResp.sql || '');
-        setTab(0);
-        console.error('[NLQ Eval Analysis] SQL generation error:', sqlResp.error);
-        return;
-      }
-      setSqlResult(sqlResp.sql);
-      setTab(0); // Switch to SQL tab
-      // 2. Execute SQL
-      const execResp = await executeSqlQuery(sqlResp.sql);
-      console.log('[NLQ Eval Analysis] SQL execution response:', execResp);
-      if (execResp.error) {
-        setError(execResp.error);
-        setTableResult([]);
-        setTableColumns([]);
-        console.error('[NLQ Eval Analysis] SQL execution error:', execResp.error);
-        return;
-      }
-      // Format columns for DataGrid
-      const columns = execResp.columns.map((col: string) => ({
-        field: col,
-        headerName: col,
-        width: 160,
-      }));
-      // Add id field for DataGrid
-      const rows = execResp.rows.map((row: any[], idx: number) => {
-        const obj: any = { id: idx };
-        execResp.columns.forEach((col: string, i: number) => {
-          obj[col] = row[i];
-        });
-        return obj;
-      });
-      console.log('[NLQ Eval Analysis] DataGrid columns:', columns);
-      console.log('[NLQ Eval Analysis] DataGrid rows:', rows);
-      setTableColumns(columns);
-      setTableResult(rows);
-    } catch (e: any) {
-      setError(e.message || 'Failed to run query');
-      console.error('[NLQ Eval Analysis] Exception in handleRunQuery:', e);
-    } finally {
-      setQuerying(false);
-    }
-  };
-
-
-
+  }, [tableColumns, tableResult, xCol]);
+  
+  // Load prompt sets and LLM configs when modal opens
   useEffect(() => {
     if (!open) return;
     setLoading(true);
     setError(null);
+    
+    // Set local database as default if no connection is selected
+    if (!selectedConnection) {
+      selectConnection('local_db');
+    }
+    
     Promise.all([fetchPromptSets(), fetchLLMConfigs()])
       .then(([ps, llms]) => {
         setPromptSets(ps);
@@ -213,391 +258,253 @@ export default function NLQAnalyticsModal({ open, onClose }: NLQAnalyticsModalPr
         setError(e.message || 'Failed to load prompt sets or LLMs');
       })
       .finally(() => setLoading(false));
-  }, [open]);
+  }, [open, selectedConnection, selectConnection]);
 
+  // For demo/development
+  const dummyRows: GridRowsProp = [
+    { id: 1, col1: 'Hello', col2: 'World' },
+    { id: 2, col1: 'Foo', col2: 'Bar' },
+  ];
+  
+  const dummyColumns: GridColDef[] = [
+    { field: 'col1', headerName: 'Col1', width: 150 },
+    { field: 'col2', headerName: 'Col2', width: 150 },
+  ];
+
+  // Render the component
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
-      <DialogTitle>NLQ Eval Analysis</DialogTitle>
-      <DialogContent>
-        <Box display="flex" flexDirection="column" gap={2}>
-          {error && <Alert severity="error">{error}</Alert>}
-          <Box display="flex" gap={2} alignItems="center">
-            <TextField
-              label="Natural Language Query"
-              value={nlq}
-              onChange={e => setNlq(e.target.value)}
-              fullWidth
-            />
-            <FormControl sx={{ minWidth: 160 }} disabled={loading || promptSets.length === 0}>
-              <InputLabel>Prompt Set</InputLabel>
-              <Select
-                value={promptSet}
-                label="Prompt Set"
-                onChange={e => setPromptSet(e.target.value as number)}
-              >
-                {promptSets.filter(ps => ps.name.toLowerCase().includes('nlq')).map(ps => (
-                  <MenuItem key={ps.id} value={ps.id}>{ps.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl sx={{ minWidth: 120 }} disabled={loading || llms.length === 0}>
-              <InputLabel>LLM</InputLabel>
-              <Select
-                value={llm}
-                label="LLM"
-                onChange={e => setLlm(e.target.value as number)}
-              >
-                {llms.map(l => (
-                  <MenuItem key={l.id} value={l.id}>{l.name}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              disabled={loading || querying || !nlq || !promptSet || !llm}
-              onClick={handleRunQuery}
-            >
-              {querying ? <CircularProgress size={24} /> : 'RUN QUERY'}
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              disabled={loading || querying || !sqlResult}
-              onClick={async () => {
-                setQuerying(true);
-                setError(null);
-                try {
-                  const execResp = await executeSqlQuery(sqlResult);
-                  console.log('[NLQ Eval Analysis] Rerun SQL execution response:', execResp);
-                  if (execResp.error) {
-                    setError(execResp.error);
-                    setTableResult([]);
-                    setTableColumns([]);
-                    console.error('[NLQ Eval Analysis] SQL execution error:', execResp.error);
-                    return;
-                  }
-                  const columns = execResp.columns.map((col: string) => ({
-                    field: col,
-                    headerName: col,
-                    width: 160,
-                  }));
-                  const rows = execResp.rows.map((row: any[], idx: number) => {
-                    const obj: any = { id: idx };
-                    execResp.columns.forEach((col: string, i: number) => {
-                      obj[col] = row[i];
-                    });
-                    return obj;
-                  });
-                  setTableColumns(columns);
-                  setTableResult(rows);
-                } catch (e: any) {
-                  setError(e.message || 'Failed to re-execute SQL');
-                } finally {
-                  setQuerying(false);
-                }
-              }}
-            >
-              Re-run Query
-            </Button>
-          </Box>
-          <Tabs value={tab} onChange={(_, v) => setTab(v)}>
-            <Tab label="SQL" />
-            <Tab label="Graph" />
-            <Tab label="Table" />
-          </Tabs>
-          <Box minHeight={400}>
-            {tab === 0 && (
-              <Box p={2}>
-                <Typography variant="subtitle1">Generated SQL</Typography>
-                <Box component="pre" bgcolor="#f5f5f5" p={2} borderRadius={2}>
-                  {sqlResult}
-                </Box>
-              </Box>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      PaperProps={{ sx: { height: '80vh' } }}
+    >
+      <DialogTitle>
+        NLQ Eval Analysis
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{ position: 'absolute', right: 8, top: 8 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box display="flex" flexDirection="column" height="100%">
+          <Box mb={2}>
+            <Typography variant="subtitle1">Query Configuration</Typography>
+            <Box display="flex" flexDirection="row" gap={2} mb={2}>
+              <FormControl sx={{ minWidth: 200, flex: 1 }}>
+                <InputLabel>Database Connection</InputLabel>
+                <Select
+                  value={selectedConnection || 'local_db'}
+                  label="Database Connection"
+                  onChange={(e) => selectConnection(e.target.value as string)}
+                  disabled={connectionsLoading}
+                >
+                  <MenuItem key="local_db" value="local_db">
+                    Local NLQ2SQL_EVAL
+                  </MenuItem>
+                  {connections.map((conn) => (
+                    <MenuItem key={conn.id} value={conn.id}>
+                      {conn.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+                {connectionsLoading && <CircularProgress size={24} sx={{ ml: 1 }} />}
+              </FormControl>
+              <FormControl sx={{ minWidth: 200, flex: 1 }}>
+                <InputLabel>Prompt Set</InputLabel>
+                <Select
+                  value={promptSet}
+                  label="Prompt Set"
+                  onChange={(e) => setPromptSet(e.target.value as number | '')}
+                  disabled={loading || promptSets.length === 0}
+                >
+                  {promptSets.map((set) => (
+                    <MenuItem key={set.id} value={set.id}>
+                      {set.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl sx={{ minWidth: 200, flex: 1 }}>
+                <InputLabel>LLM</InputLabel>
+                <Select
+                  value={llm}
+                  label="LLM"
+                  onChange={(e) => setLlm(e.target.value as number | '')}
+                  disabled={loading || llms.length === 0}
+                >
+                  {llms.map((model) => (
+                    <MenuItem key={model.id} value={model.id}>
+                      {model.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            {connectionsError && (
+              <Alert severity="error" sx={{ mt: 1, mb: 2 }}>
+                {connectionsError}
+              </Alert>
             )}
-            {tab === 1 && (
-              <Box p={2} height={400}>
-                <Typography variant="subtitle1">Graph Visualization</Typography>
-                {tableResult.length > 0 && tableColumns.length > 1 ? (
-                  xCol && yCol.length > 0 ? (
-                    <>
-                      <Box display="flex" gap={2} mb={2}>
-                        <FormControl size="small" sx={{ minWidth: 180 }}>
-                          <InputLabel>X Axis</InputLabel>
-                          <Select
-                            value={xCol}
-                            label="X Axis"
-                            onChange={e => setXCol(e.target.value)}
-                          >
-                            {tableColumns.filter(col => col.field !== 'id').map(col => (
-                              <MenuItem key={col.field} value={col.field}>{col.headerName}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <FormControl size="small" sx={{ minWidth: 180 }}>
-                          <InputLabel>Y Axis</InputLabel>
-                          <Select
-                            multiple={['bar','grouped_bar','stacked_bar','line','scatter'].includes(chartType)}
-                            value={yCol}
-                            label="Y Axis"
-                            onChange={e => {
-                              const value = e.target.value;
-                              setYCol(Array.isArray(value) ? value : [value]);
-                            }}
-                            renderValue={(selected) => Array.isArray(selected) ? selected.join(', ') : selected}
-                          >
-                            {tableColumns.filter(col => col.field !== 'id' && col.field !== xCol).map(col => (
-                              <MenuItem key={col.field} value={col.field}>{col.headerName}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                        <FormControl size="small" sx={{ minWidth: 200 }}>
-                          <InputLabel>Chart Type</InputLabel>
-                          <Select
-                            value={chartType}
-                            label="Chart Type"
-                            onChange={e => setChartType(e.target.value)}
-                          >
-                            {chartTypes.map(type => (
-                              <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-                      {/* Chart Rendering */}
-                      {chartType === 'bar' && Array.isArray(yCol) && yCol.length > 0 && (
-                        <Box sx={{ overflowX: 'auto' }}>
-                          <div style={{ width: Math.max(600, 80 * tableResult.length) }}>
-                            <ResponsiveContainer width="100%" height={300}>
-                              <BarChart data={tableResult.map(row => {
-                                const obj: any = { x: row[xCol] };
-                                yCol.forEach((col: string) => { obj[col] = row[col]; });
-                                return obj;
-                              })}>
-                                <XAxis dataKey="x" name={xCol} />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                {yCol.map((col: string, idx: number) => (
-                                  <Bar key={col} dataKey={col} name={col} fill={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
-                                ))}
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </Box>
-                      )}
-                      {chartType === 'grouped_bar' && Array.isArray(yCol) && yCol.length > 0 && (() => {
-                        const numericCols = tableColumns.filter(col => yCol.includes(col.field));
-                        if (numericCols.length === 0) {
-                          return <Typography>No suitable numeric columns for grouped bar chart.</Typography>;
-                        }
-                        return (
-                          <Box sx={{ overflowX: 'auto' }}>
-                            <div style={{ width: Math.max(600, 80 * tableResult.length) }}>
-                              <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={tableResult.map(row => {
-                                  const group: any = { x: row[xCol] };
-                                  numericCols.forEach(col => { group[col.field] = row[col.field]; });
-                                  return group;
-                                })}>
-                                  <XAxis dataKey="x" name={xCol} />
-                                  <YAxis />
-                                  <Tooltip />
-                                  <Legend />
-                                  {numericCols.map((col, idx) => (
-                                    <Bar key={col.field} dataKey={col.field} name={col.headerName} fill={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
-                                  ))}
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </Box>
-                        );
-                      })()}
-                      {chartType === 'stacked_bar' && Array.isArray(yCol) && yCol.length > 0 && (() => {
-                        const numericCols = tableColumns.filter(col => yCol.includes(col.field));
-                        if (numericCols.length === 0) {
-                          return <Typography>No suitable numeric columns for stacked bar chart.</Typography>;
-                        }
-                        return (
-                          <Box sx={{ overflowX: 'auto' }}>
-                            <div style={{ width: Math.max(600, 80 * tableResult.length) }}>
-                              <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={tableResult.map(row => {
-                                  const group: any = { x: row[xCol] };
-                                  numericCols.forEach(col => { group[col.field] = row[col.field]; });
-                                  return group;
-                                })}>
-                                  <XAxis dataKey="x" name={xCol} />
-                                  <YAxis />
-                                  <Tooltip />
-                                  <Legend />
-                                  {numericCols.map((col, idx) => (
-                                    <Bar key={col.field} dataKey={col.field} name={col.headerName} stackId="a" fill={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
-                                  ))}
-                                </BarChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </Box>
-                        );
-                      })()}
-                      {chartType === 'scatter' && Array.isArray(yCol) && yCol.length > 0 && (
-                        <ResponsiveContainer width="100%" height={300}>
-                          <ScatterChart>
-                            <XAxis type="number" dataKey={xCol || ''} name={xCol} />
-                            {yCol.map((col: string, idx: number) => (
-                              <YAxis key={col} type="number" dataKey={col} name={col} yAxisId={col} />
-                            ))}
-                            <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                            <Legend />
-                            {yCol.map((col: string, idx: number) => (
-                              <Scatter key={col} name={col} data={tableResult} fill={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} dataKey={col} yAxisId={col} />
-                            ))}
-                          </ScatterChart>
-                        </ResponsiveContainer>
-                      )}
-                      {chartType === 'line' && Array.isArray(yCol) && yCol.length > 0 && (
-                        <ResponsiveContainer width="100%" height={300}>
-                          <LineChart data={tableResult}>
-                            <XAxis dataKey={xCol || ''} name={xCol} />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            {yCol.map((col: string, idx: number) => (
-                              <Line key={col} type="monotone" dataKey={col} name={col} stroke={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
-                            ))}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      )}
-                      {chartType === 'heatmap' && yCol.length > 0 && (() => {
-                        // Minimal HTML heatmap: xCol as columns, yCol as rows, value is cell count or mean of a numeric col
-                        if (!xCol || !yCol) return <Typography>No columns selected for heatmap.</Typography>;
-                        // Get unique x and y values
-                        const xVals = Array.from(new Set(tableResult.map(row => row[xCol])));
-                        const yVals = Array.from(new Set(tableResult.map(row => row[yCol[0]])));
-                        // Build value matrix (count occurrences)
-                        const matrix = yVals.map(yv => xVals.map(xv => tableResult.filter(row => row[xCol] === xv && row[yCol[0]] === yv).length));
-                        return (
-                          <Box>
-                            <Typography>Heatmap: {xCol} vs {yCol[0]}</Typography>
-                            <Box sx={{ overflowX: 'auto' }}>
-                              <div style={{ minWidth: Math.max(600, 60 * xVals.length + 100) }}>
-                                <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: 8 }}>
-                                  <thead>
-                                    <tr>
-                                      <th style={{ border: '1px solid #ccc', padding: 2, minWidth: '80px' }}></th>
-                                      {xVals.map(xv => <th key={xv} style={{ border: '1px solid #ccc', padding: 2, minWidth: '60px' }}>{xv}</th>)}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {yVals.map((yv, yi) => (
-                                      <tr key={yv}>
-                                        <th style={{ border: '1px solid #ccc', padding: 2, minWidth: '80px' }}>{yv}</th>
-                                        {matrix[yi].map((val, xi) => (
-                                          <td key={xi} style={{ background: `rgba(25, 118, 210, ${val > 0 ? 0.2 + 0.8 * val / Math.max(...matrix.flat()) : 0})`, border: '1px solid #ccc', textAlign: 'center', padding: 2, minWidth: '60px' }}>{val}</td>
-                                        ))}
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </Box>
-                          </Box>
-                        );
-                      })()}
-                      {chartType === 'pie' && yCol.length > 0 && (
-                        <ResponsiveContainer width="100%" height={300}>
-                          <PieChart>
-                            <Tooltip />
-                            <Legend />
-                            <Pie
-                              data={tableResult}
-                              dataKey={yCol[0]}
-                              nameKey={xCol || ''}
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={100}
-                              fill="#1976d2"
-                              label
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      )}
-                      {chartType === 'box' && yCol.length > 0 && (() => {
-                        // Minimal SVG box plot for yCol grouped by xCol
-                        if (!xCol || !yCol) return <Typography>No columns selected for box plot.</Typography>;
-                        const groups = Array.from(new Set(tableResult.map(row => row[xCol])));
-                        const stats = groups.map(g => {
-                          const vals = tableResult.filter(row => row[xCol] === g).map(row => row[yCol[0]]).filter(v => typeof v === 'number').sort((a, b) => a - b);
-                          if (!vals.length) return undefined;
-                          const q1 = vals[Math.floor(vals.length * 0.25)];
-                          const median = vals[Math.floor(vals.length * 0.5)];
-                          const q3 = vals[Math.floor(vals.length * 0.75)];
-                          const min = vals[0];
-                          const max = vals[vals.length - 1];
-                          return { group: g, min, q1, median, q3, max };
-                        }).filter((s): s is { group: string; min: number; q1: number; median: number; q3: number; max: number } => s !== undefined);
-                        if (!stats.length) return <Typography>No numeric data for box plot.</Typography>;
-                        // SVG rendering
-                        const minVal = Math.min(...stats.map(s2 => s2.min));
-                        const maxVal = Math.max(...stats.map(s2 => s2.max));
-                        const width = 40 * stats.length + 40, height = 160;
-                        const scale = (v: number) => height - 20 - ((v - minVal) / (maxVal - minVal + 1e-6)) * 120;
-                        return (
-                          <Box>
-                            <Typography>Box Plot: {yCol[0]} grouped by {xCol}</Typography>
-                            <svg width={width} height={height} style={{ background: '#f5f5f5', marginTop: 8 }}>
-                              {stats.map((s, i) => {
-                                const x = 40 + i * 40;
-                                return (
-                                  <g key={s.group}>
-                                    {/* Whiskers */}
-                                    <line x1={x} x2={x} y1={scale(s.min)} y2={scale(s.max)} stroke="#1976d2" />
-                                    {/* Box */}
-                                    <rect x={x - 10} y={scale(s.q3)} width={20} height={scale(s.q1) - scale(s.q3)} fill="#1976d2" opacity={0.4} />
-                                    {/* Median */}
-                                    <line x1={x - 10} x2={x + 10} y1={scale(s.median)} y2={scale(s.median)} stroke="#1976d2" strokeWidth={2} />
-                                    {/* Min/Max ticks */}
-                                    <line x1={x - 7} x2={x + 7} y1={scale(s.min)} y2={scale(s.min)} stroke="#1976d2" />
-                                    <line x1={x - 7} x2={x + 7} y1={scale(s.max)} y2={scale(s.max)} stroke="#1976d2" />
-                                    {/* Group label */}
-                                    <text x={x} y={height - 5} fontSize={12} textAnchor="middle">{s.group}</text>
-                                  </g>
-                                );
-                              })}
-                            </svg>
-                          </Box>
-                        );
-                      })()}
-                      {chartType === 'pareto' && yCol.length > 0 && (() => {
-                        // Pareto: sorted bar chart, xCol as category, yCol as value, descending
-                        if (!xCol || !yCol) return <Typography>No columns selected for Pareto chart.</Typography>;
-                        const sorted = [...tableResult].sort((a, b) => (b[yCol[0]] ?? 0) - (a[yCol[0]] ?? 0));
-                        return (
-                          <ResponsiveContainer width="100%" height={300}>
-                            <BarChart data={sorted}>
-                              <XAxis dataKey={xCol} name={xCol} />
-                              <YAxis name={yCol[0]} />
-                              <Tooltip />
-                              <Legend />
-                              <Bar dataKey={yCol[0]} name={yCol[0]} fill="#1976d2" />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
 
-                    </>
-                  ) : <Typography>No suitable columns for bar chart.</Typography>
-                ) : <Typography>No data to display.</Typography>}
-              </Box>
+            <Box display="flex" gap={2}>
+              <TextField
+                label="Natural Language Query"
+                value={nlq}
+                onChange={(e) => setNlq(e.target.value)}
+                disabled={loading || querying}
+                multiline
+                rows={3}
+                fullWidth
+              />
+              <Button
+                variant="contained"
+                onClick={handleRunQuery}
+                disabled={loading || querying || !nlq || (!selectedConnection && !promptSet) || promptSet === '' || llm === ''}
+                sx={{ alignSelf: 'flex-end', minWidth: 100 }}
+              >
+                {querying ? <CircularProgress size={24} /> : 'Run Query'}
+              </Button>
+            </Box>
+
+            {error && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
             )}
-            {tab === 2 && (
-              <Box p={2}>
-                <Typography variant="subtitle1">Result Table</Typography>
-                <Box height={300}>
-                  <DataGrid rows={tableResult} columns={tableColumns} />
+          </Box>
+          
+          <Box display="flex" flexDirection="column" flexGrow={1} overflow="hidden">
+            <Box mb={2} display="flex" gap={2} alignItems="center">
+              <Button
+                variant="outlined"
+                disabled={!sqlResult || querying}
+                onClick={handleRerunQuery}
+              >
+                Re-run Query
+              </Button>
+            </Box>
+            <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+              <Tab label="SQL" />
+              <Tab label="Graph" />
+              <Tab label="Table" />
+            </Tabs>
+            <Box flexGrow={1} overflow="auto">
+              {tab === 0 && (
+                <Box p={2}>
+                  <Typography variant="subtitle1">Generated SQL</Typography>
+                  <Box component="pre" bgcolor="#f5f5f5" p={2} borderRadius={2} overflow="auto">
+                    {sqlResult}
+                  </Box>
                 </Box>
-              </Box>
-            )}
+              )}
+              {tab === 1 && (
+                <Box p={2}>
+                  <Typography variant="subtitle1">Graph Visualization</Typography>
+                  {tableResult.length > 0 && tableColumns.length > 1 ? (
+                    xCol && yCol.length > 0 ? (
+                      <>
+                        <Box display="flex" gap={2} mb={2}>
+                          <FormControl size="small" sx={{ minWidth: 180 }}>
+                            <InputLabel>X Axis</InputLabel>
+                            <Select
+                              value={xCol}
+                              label="X Axis"
+                              onChange={e => setXCol(e.target.value)}
+                            >
+                              {tableColumns.filter(col => col.field !== 'id').map(col => (
+                                <MenuItem key={col.field} value={col.field}>{col.headerName}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <FormControl size="small" sx={{ minWidth: 180 }}>
+                            <InputLabel>Y Axis</InputLabel>
+                            <Select
+                              multiple={['bar','grouped_bar','stacked_bar','line','scatter'].includes(chartType)}
+                              value={yCol}
+                              label="Y Axis"
+                              onChange={e => {
+                                const value = e.target.value;
+                                setYCol(Array.isArray(value) ? value : [value]);
+                              }}
+                              renderValue={(selected) => Array.isArray(selected) ? selected.join(', ') : selected}
+                            >
+                              {tableColumns.filter(col => col.field !== 'id' && col.field !== xCol).map(col => (
+                                <MenuItem key={col.field} value={col.field}>{col.headerName}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                          <FormControl size="small" sx={{ minWidth: 200 }}>
+                            <InputLabel>Chart Type</InputLabel>
+                            <Select
+                              value={chartType}
+                              label="Chart Type"
+                              onChange={e => setChartType(e.target.value)}
+                            >
+                              {chartTypes.map(type => (
+                                <MenuItem key={type.value} value={type.value}>{type.label}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                        {/* Chart Rendering */}
+                        {chartType === 'bar' && Array.isArray(yCol) && yCol.length > 0 && (
+                          <Box sx={{ overflowX: 'auto' }}>
+                            <div style={{ width: Math.max(600, 80 * tableResult.length) }}>
+                              <ResponsiveContainer width="100%" height={300}>
+                                <BarChart data={tableResult}>
+                                  <XAxis dataKey={xCol} name={xCol} />
+                                  <YAxis />
+                                  <Tooltip />
+                                  <Legend />
+                                  {yCol.map((col: string, idx: number) => (
+                                    <Bar key={col} dataKey={col} name={col} fill={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
+                                  ))}
+                                </BarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </Box>
+                        )}
+                        {chartType === 'line' && Array.isArray(yCol) && yCol.length > 0 && (
+                          <Box sx={{ overflowX: 'auto' }}>
+                            <div style={{ width: Math.max(600, 80 * tableResult.length) }}>
+                              <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={tableResult}>
+                                  <XAxis dataKey={xCol} name={xCol} />
+                                  <YAxis />
+                                  <Tooltip />
+                                  <Legend />
+                                  {yCol.map((col: string, idx: number) => (
+                                    <Line key={col} type="monotone" dataKey={col} name={col} stroke={["#1976d2", "#26a69a", "#ef5350", "#ffa726", "#ab47bc"][idx % 5]} />
+                                  ))}
+                                </LineChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </Box>
+                        )}
+                      </>
+                    ) : <Typography>Please select X and Y columns.</Typography>
+                  ) : <Typography>No data to display.</Typography>}
+                </Box>
+              )}
+              {tab === 2 && (
+                <Box p={2} height="100%">
+                  <Typography variant="subtitle1">Result Table</Typography>
+                  <Box height="calc(100% - 40px)">
+                    <DataGrid
+                      rows={tableResult}
+                      columns={tableColumns}
+                      disableRowSelectionOnClick
+                      autoPageSize
+                    />
+                  </Box>
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
       </DialogContent>

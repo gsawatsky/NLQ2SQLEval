@@ -5,12 +5,14 @@ import datetime
 
 class NLQ(Base):
     __tablename__ = "nlqs"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     nlq_text = Column(Text, nullable=False)
     generated_results = relationship("GeneratedResult", back_populates="nlq")
 
 class LLMConfig(Base):
     __tablename__ = "llm_configs"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     api_key = Column(String, nullable=False)  # Store securely in production!
@@ -21,6 +23,7 @@ class LLMConfig(Base):
 
 class PromptComponent(Base):
     __tablename__ = "prompt_components"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     type = Column(String, nullable=True)  # e.g., 'system', 'semantic_layer', etc.
@@ -29,6 +32,7 @@ class PromptComponent(Base):
 
 class PromptSet(Base):
     __tablename__ = "prompt_sets"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
@@ -37,6 +41,7 @@ class PromptSet(Base):
 
 class PromptSetComponent(Base):
     __tablename__ = "prompt_set_components"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     prompt_set_id = Column(Integer, ForeignKey("prompt_sets.id"))
     prompt_component_id = Column(Integer, ForeignKey("prompt_components.id"))
@@ -45,6 +50,7 @@ class PromptSetComponent(Base):
 
 class ValidationRun(Base):
     __tablename__ = "validation_runs"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     llm_config_id = Column(Integer, ForeignKey("llm_configs.id"))
@@ -58,6 +64,7 @@ class ValidationRun(Base):
 
 class GeneratedResult(Base):
     __tablename__ = "generated_results"
+    __table_args__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, index=True)
     validation_run_id = Column(Integer, ForeignKey("validation_runs.id"))
     nlq_id = Column(Integer, ForeignKey("nlqs.id"))

@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Container, Box, Button } from '@mui/material';
 import EvaluateScreen from './components/EvaluateScreen';
 import NLQAnalyticsModal from './components/NLQAnalyticsModal';
+import { SnowflakeProvider } from './contexts/SnowflakeContext';
 
 function App() {
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <SnowflakeProvider>
+      <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -26,6 +28,7 @@ function App() {
         onClose={() => setAnalyticsOpen(false)}
       />
     </Box>
+    </SnowflakeProvider>
   );
 }
 

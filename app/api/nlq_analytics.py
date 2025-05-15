@@ -6,9 +6,17 @@ import re
 import os
 from sqlalchemy.orm import Session
 from app.database.database import SessionLocal
-from app.models import core
+from app.models import core, snowflake_connection
 from app.api.evaluate import call_gemini_llm  # or your actual LLM call function
 from app.api.prompt_templating import apply_prompt_template  # or actual template function
+from snowflake.connector import connect
+
+# Pydantic model for connection response
+class ConnectionResponse(BaseModel):
+    id: int
+    name: str
+    database: Optional[str]
+    schema: Optional[str]
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '../nlq2sql_eval.db')
 
@@ -34,6 +42,7 @@ class GenerateSqlResponse(BaseModel):
 
 class ExecuteSqlRequest(BaseModel):
     sql: str
+    connection_id: Optional[int] = None
 
 class ExecuteSqlResponse(BaseModel):
     columns: List[str]
@@ -71,6 +80,24 @@ def generate_sql(req: GenerateSqlRequest, db: Session = Depends(get_db)):
         return GenerateSqlResponse(sql=None, llm_response=None, error=str(e))
 
 # --- Endpoint: Execute SQL ---
+@router.get('/nlq_analytics_connections', response_model=List[ConnectionResponse])
+def get_connections(db: Session = Depends(get_db)):
+    try:
+        connections = db.query(snowflake_connection.SnowflakeConnection).all()
+        # Convert SQLAlchemy objects to dictionaries
+        result = []
+        for conn in connections:
+            conn_dict = {
+                'id': conn.id,
+                'name': conn.name,
+                'database': conn.database,
+                'schema': conn.schema
+            }
+            result.append(conn_dict)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post('/api/nlq-analytics/execute-sql', response_model=ExecuteSqlResponse)
 def execute_sql(req: ExecuteSqlRequest):
     import logging

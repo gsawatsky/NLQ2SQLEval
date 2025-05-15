@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Grid, Paper, Typography, TextField, Button, Divider, MenuItem, Select, InputLabel, FormControl, CircularProgress, Box, OutlinedInput, Chip, Alert, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Autocomplete
 } from '@mui/material';
+import { useSnowflakeContext } from '../contexts/SnowflakeContext';
+import { SnowflakeConnection } from '../types/snowflakeTypes';
 // Removed all duplicate imports for Dialog, DialogTitle, DialogContent, DialogActions, Button
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -25,6 +27,17 @@ interface LLMConfig {
 const MAX_EVALS = 4;
 
 const EvaluateScreen: React.FC = () => {
+  // Get Snowflake connections from context
+  const { 
+    connections, 
+    selectedConnection, 
+    selectConnection,
+    loading: connectionsLoading,
+    error: connectionsError
+  } = useSnowflakeContext();
+  
+  // Connections are loaded automatically by useSnowflakeService hook
+  
   // --- NLQ Autocomplete State ---
   const [nlqSuggestions, setNlqSuggestions] = useState<string[]>([]);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -332,6 +345,9 @@ function getGeneratedSql(promptSetId: number, llmConfigId: number): string {
                 <TextField {...params} label="NLQ" multiline minRows={3} fullWidth sx={{ mb: 2 }} />
               )}
             />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 250 }}>
+            
           </Box>
           <Box sx={{ flex: 1, minWidth: 250 }}>
             <FormControl fullWidth sx={{ mb: 2 }}>

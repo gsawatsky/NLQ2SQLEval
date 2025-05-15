@@ -68,11 +68,28 @@ export async function generateSqlFromNlq(nlq: string, promptSetId: number, llmCo
   return res.json();
 }
 
-export async function executeSqlQuery(sql: string) {
-  const res = await fetch("http://localhost:8000/api/nlq-analytics/execute-sql", {
+export async function executeSqlQuery(sql: string, connection?: any) {
+  console.log('Executing SQL with connection:', connection);
+  
+  // If connection is 'local_db', use the local database API instead of Snowflake
+  if (connection === 'local_db') {
+    const res = await fetch("http://localhost:8000/api/nlq-analytics/execute-sql", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sql }),
+    });
+    if (!res.ok) throw new Error("Failed to execute SQL on local database");
+    return res.json();
+  }
+  
+  // Otherwise use the Snowflake API
+  const res = await fetch("http://localhost:8000/api/snowflake/execute-sql", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sql }),
+    body: JSON.stringify({ 
+      sql,
+      connection_id: connection?.id
+    }),
   });
   if (!res.ok) throw new Error("Failed to execute SQL");
   return res.json();

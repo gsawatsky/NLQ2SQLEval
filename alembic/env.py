@@ -18,7 +18,8 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'app')))
 from database.database import Base  # Import your Base
-from models import core  # Import your models so Alembic sees them
+from models.core import NLQ, LLMConfig, PromptComponent, PromptSet, PromptSetComponent, ValidationRun  # Import specific models
+from models.snowflake_connection import SnowflakeConnection  # Import Snowflake connection model
 
 # add your model's MetaData object here
 # for 'autogenerate' support
